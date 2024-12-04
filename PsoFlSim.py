@@ -6,7 +6,6 @@ Client_list = []
 
 
 # TODO : Create a Role Dictionary , define processing buffer for each role.
-
 dummy_role_dictionary = {   # width=2 , depth=3
     "t1ag1_1" : [],
     "t1ag1_2" : [],
@@ -218,14 +217,21 @@ def print_tree(node, level=0, is_last=True, prefix=""):
             new_prefix = prefix + ("    " if is_last else "│   ")
             print_tree(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
 
-def changeRole(label) :
+def changeRole(new_role_label , client_id) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client
     pass 
 
-def reArrangeHierarchy() :      #   * According to the labels dictionary we rearrange the hierarchy , when the changeRole function is invoked the asscociated label value of the client changes. this necesitates rearranging the hierarchy 
-    for node in Client_list :   #   * The rule in the rearrangement is that no two clients should have the same label. to ensure that before we allocate the new label to the new selected client we search for the client that has that label and remove that label from that client then we associate to the newly selected client.
-        pass                    #   * After associating the new labels to all the selected clients we traverse again the list of clients and search for the client that has no label.
-                                #   * The process of rearrangement is two folds the first fold is to change the label of the clients. then we traverse the list of clients and update the processing_buffer according to the clients label and the role dictionary. this means that for each client we first look at the label then according to the role dictionary identify the clients that have the roles as the children to that specific role
+def takeAwayRole(role_label) :                       # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer
+    pass                        
 
+
+def reArrangeHierarchy(pso_particle) :      # This function has the iterative approach to perform change role and take away role
+    # loop 1 : iterativly perform 1) takeAwayRole 2) changeRole for all the PSO particle elements
+
+    # loop 2 : traverse the Client_list to find clients with no roles then associate the trainer roles in the buffer to the selected client
+
+    # loop 3 : traverse the Client_list one last time and associates client with proper roles according to the role dictionary to the processing buffer of clients that are the aggregators
+
+    pass 
 
 def main() :
     root = generate_hierarchy(depth=3, width=2)
@@ -240,3 +246,12 @@ def main() :
 
 if __name__ == "__main__" :
     main()
+
+
+
+
+
+                                #   * According to the labels dictionary we rearrange the hierarchy , when the changeRole function is invoked the asscociated label value of the client changes. this necesitates rearranging the hierarchy 
+                                #   * The rule in the rearrangement is that no two clients should have the same label. to ensure that before we allocate the new label to the new selected client we search for the client that has that label and remove that label from that client then we associate to the newly selected client.
+                                #   * After associating the new labels to all the selected clients we traverse again the list of clients and search for the client that has no label.
+                                #   * The process of rearrangement is two folds the first fold is to change the label of the clients. then we traverse the list of clients and update the processing_buffer according to the clients label and the role dictionary. this means that for each client we first look at the label then according to the role dictionary identify the clients that have the roles as the children to that specific role
