@@ -219,7 +219,6 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
             client.label = Role_buffer.pop()    
             client.is_aggregator = False 
     
-    for client in Client_list : 
         if client.is_aggregator : 
             if len(client.processing_buffer) == 0 : 
                 temp = Role_dictionary[client.label]
