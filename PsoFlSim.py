@@ -138,9 +138,9 @@ def generate_hierarchy(depth, width):
         return new_client
 
     def create_trainer(label_prefix):
-        memcap = randint(5, 15)
-        mdatasize = randint(5, 15)
-        pspeed = randint(5, 15)    
+        pspeed = randint(5, 15)
+        memcap = randint(10, 50)
+        mdatasize = randint(5, 20) 
         length = len(Client_list)
         new_client = Client(memcap, mdatasize, length, label_prefix , pspeed)
         Client_list.append(new_client)
@@ -159,12 +159,16 @@ def generate_hierarchy(depth, width):
                 parent.processing_buffer.append(child)
                 next_level.append(child)
 
-                if d == depth - 1:  # If this is the last depth, create trainers (leaf nodes)
-                    for j in range(2):  # Binary leaves
-                        trainer = create_trainer(f"{child.label}_{j+1}")
-                        child.processing_buffer.append(trainer)
-
                 for role in [parent , child] :
+                    Role_dictionary[role.label] = [child.label for child in role.processing_buffer]
+
+        if d == depth - 1:    
+            for client in level_agtrainer_list :
+                for j in range(2):          
+                    trainer = create_trainer(f"{client.label}_{j+1}")
+                    client.processing_buffer.append(trainer)
+
+                for role in [client , trainer] :
                     Role_dictionary[role.label] = [child.label for child in role.processing_buffer]
 
         level_agtrainer_list = []
@@ -187,80 +191,73 @@ def print_tree(node, level=0, is_last=True, prefix=""):
             print_tree(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
 
 
-def changeRole(index , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
-    if Client_list[index].is_aggregator == False : 
-        Role_buffer.append(Client_list[index].label)  
-    Client_list[index].processing_buffer = []
-    Client_list[index].label = list(Role_dictionary.keys())[new_pos]
-    Client_list[index].is_aggregator = True
+def changeRole(client , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
+    if client.is_aggregator == False : 
+        Role_buffer.append(client.label)  
+    client.processing_buffer = []
+    client.label = list(Role_dictionary.keys())[new_pos]
+    client.is_aggregator = True
 
-def takeAwayRole(index) :  
-#    if re.search(trainer_pattern , Client_list[index].label):                         # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
-    Client_list[index].label = None
-    Client_list[index].processing_buffer = []             
+def takeAwayRole(client) :  
+                                           # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
+    client.label = None
+    client.processing_buffer = []             
 
-#                        new pos  -> [0 , 1 , 2 , 3]
-def reArrangeHierarchy(pso_particle=[2 , 4 , 6 , 3 , 1 , 7 , 11]) :            # This function has the iterative approach to perform change role and take away role
+#                        new pos  -> [0 , 1 , 2 , 3 , 4 , 5 , 6]
+def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :            # This function has the iterative approach to perform change role and take away role
     
-    # loop 1 : iterativly perform 1) takeAwayRole 2) changeRole for all the PSO particle elements
     for new_pos , clid in enumerate(pso_particle) : 
-        for i in range(len(Client_list)) : 
-            if Client_list[i].label == list(Role_dictionary.keys())[new_pos] :
-                takeAwayRole(i)
+        for client in Client_list : 
+            if client.label == list(Role_dictionary.keys())[new_pos] :
+                takeAwayRole(client)
 
-        for i in range(len(Client_list)) : 
-            if Client_list[i].client_id == clid : 
-                changeRole(i , new_pos)
+            if client.client_id == clid : 
+                changeRole(client , new_pos)
 
-    for i in range(len(Client_list)) : 
-        if Client_list[i].label == None :
-            Client_list[i].label = Role_buffer.pop()    
-            Client_list[i].is_aggregator = False 
+    for client in Client_list : 
+        if client.label == None :
+            client.label = Role_buffer.pop()    
+            client.is_aggregator = False 
     
-    for i in range(len(Client_list)) : 
-        if Client_list[i].is_aggregator : 
-            if len(Client_list[i].processing_buffer) == 0 : 
-                temp = Role_dictionary[Client_list[i].label]
+    for client in Client_list : 
+        if client.is_aggregator : 
+            if len(client.processing_buffer) == 0 : 
+                temp = Role_dictionary[client.label]
                 for role in temp : 
                     for c in Client_list :
                         if  c.label == role : 
-                            Client_list[i].processing_buffer.append(c) 
+                            client.processing_buffer.append(c) 
                         
-    for i in range(len(Client_list)) :
-        if Client_list[i].label == list(Role_dictionary.keys())[0] :
-            return Client_list[i]
+    for client in Client_list :
+        if client.label == list(Role_dictionary.keys())[0] :
+            return client
         
-    # loop 2 : traverse the Client_list to find clients with no roles then associate the trainer roles in the buffer to the selected client
-
-    # loop 3 : traverse the Client_list one last time and associates client with proper roles according to the role dictionary to the processing buffer of clients that are the aggregators
-
-    pass 
-
 
 def reLabelClients() :
     pass
 
 
 def main() :
+    print("\n############## TREE BEFORE REARRANGEMENT ##################\n")
     root = generate_hierarchy(depth=DEPTH, width=WIDTH)
     
-    # # Display the tree
-    # print("Generated Hierarchy Tree:")
+    # Display the tree
+    print("Generated Hierarchy Tree :")
     print_tree(root)
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-    # print([client.client_id for client in Client_list])
-
+    print("\n")
     Evaluator.calculate_processing_cost(root)
+    
+
     root = reArrangeHierarchy()
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\n############## RE ARRANGED TREE ##################\n")
+    
 
+    print("Generated Hierarchy Tree :")
     print_tree(root)
-    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    print("\n")
     Evaluator.calculate_processing_cost(root)
 
-    # print(Role_dictionary)
 
-    # print([f"{client.label}" for client in Client_list])
 
 if __name__ == "__main__" :
     main()
@@ -269,8 +266,3 @@ if __name__ == "__main__" :
 
 
 
-#   * According to the labels dictionary we rearrange the hierarchy , when the changeRole function is invoked the asscociated label value of the client changes. this necesitates rearranging the hierarchy 
-#   * The rule in the rearrangement is that no two clients should have the same label. to ensure that before we allocate the new label to the new selected client we search for the client that has that label and remove that label from that client then we associate to the newly selected client.
-#   * After associating the new labels to all the selected clients we traverse again the list of clients and search for the client that has no label.
-#   * The process of rearrangement is two folds the first fold is to change the label of the clients. then we traverse the list of clients and update the processing_buffer according to the clients label and the role dictionary. this means that for each client we first look at the label then according to the role dictionary identify the clients that have the roles as the children to that specific role
-#   No two IDs must be identical in the PSO particle
