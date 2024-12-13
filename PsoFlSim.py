@@ -28,7 +28,6 @@ class Particle :
         self.pos = pos
         self.velocity = velocity
         self.best_pos = self.pos.copy()
-        self.total_memcons_degree = 0
 
 # Swarm class
 class Swarm : 
@@ -59,7 +58,7 @@ class Client :
         self.is_aggregator = is_aggregator
         self.client_id = client_id  
         self.processing_buffer = []
-        self.memcons = 0
+        self.memscore = 0
 
     def changeRoleToAggregator(self) :
         self.is_aggregator = True
@@ -83,7 +82,7 @@ class Evaluator :
         bfs_queue = [master]  # Start with the root node
         levels = []           # List to store nodes level by level
         total_process_delay = 0
-        total_memcons = 0 
+        total_memscore = 0 
 
         # Perform BFS to group nodes by levels
         while bfs_queue:
@@ -113,16 +112,16 @@ class Evaluator :
                         child.mdatasize for child in node.processing_buffer
                     )
 
-                    node.memcons = node.memcap - cluster_head_memcons
-                    total_memcons += node.memcons
+                    node.memscore = node.memcap - cluster_head_memcons
+                    total_memscore += node.memscore
                     cluster_delay = cluster_head_memcons / node.pspeed
                     cluster_delays.append(cluster_delay)
 
                     # Print details for the cluster
-                    print(f"AgTrainer: {node.label}, Cluster Mem Consumption: {cluster_head_memcons}, Cluster Delay: {cluster_delay:.2f}, MemCons: {node.memcons}")
+                    print(f"AgTrainer: {node.label}, Cluster Head MemCons : {cluster_head_memcons}, Cluster Delay: {cluster_delay:.2f}, Memory Score: {node.memscore}")
                     
                     for child in node.processing_buffer:
-                        print(f"Trainer: {child.label}, MemCons: {child.mdatasize}")
+                        print(f"Trainer: {child.label}, Memory Score: {child.mdatasize}")
 
             # Find the maximum cluster delay for the level
             if cluster_delays:
@@ -131,9 +130,9 @@ class Evaluator :
                 print(f"Level Max Cluster Delay: {max_cluster_delay:.2f}\n")
 
         print(f"Total Processing Delay: {total_process_delay:.2f}")
-        print(f"Total Memory Consumption: {total_memcons}")
+        print(f"Total Memory Score: {total_memscore}")
 
-        return total_process_delay , total_memcons 
+        return total_process_delay , total_memscore 
 
 
 def generate_hierarchy(depth, width):
@@ -195,10 +194,10 @@ def generate_hierarchy(depth, width):
 def printTree(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
     if node.is_aggregator : 
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, MemCons: {node.memcons})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, MemScore: {node.memscore})")
 
     elif node.is_aggregator == False :
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, MemCons: {node.memcons})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, MemScore: {node.memscore})")
 
     if node.is_aggregator :
         for i, child in enumerate(node.processing_buffer):
@@ -273,7 +272,7 @@ def main() :
     print("\nGenerated Hierarchy : ")
     printTree(root)
 
-    swarm = Swarm(pop_n)
+    # swarm = Swarm(pop_n)
 
     # current_position = [8, 9, 10, 11, 12, 13, 14]
     # current_velocity = [0, 0, 0, 0, 0, 0, 0]
