@@ -28,7 +28,7 @@ class Particle :
         self.pos = pos
         self.velocity = velocity
         self.best_pos = self.pos.copy()
-        self.score = 0
+        self.total_memcons_degree = 0
 
 # Swarm class
 class Swarm : 
@@ -59,7 +59,7 @@ class Client :
         self.is_aggregator = is_aggregator
         self.client_id = client_id  
         self.processing_buffer = []
-        self.score = 0
+        self.memcons = 0
 
     def changeRoleToAggregator(self) :
         self.is_aggregator = True
@@ -82,8 +82,8 @@ class Evaluator :
     def calculate_processing_cost(master):
         bfs_queue = [master]  # Start with the root node
         levels = []           # List to store nodes level by level
-        total_delay = 0
-        particle_total_score = 0 
+        total_process_delay = 0
+        total_memcons = 0 
 
         # Perform BFS to group nodes by levels
         while bfs_queue:
@@ -109,30 +109,31 @@ class Evaluator :
                 if node.is_aggregator :
 
                     # Update the node's mdatasize with its children's cumulative memory size
-                    cluster_head_memـcons = node.mdatasize + sum(
+                    cluster_head_memcons = node.mdatasize + sum(
                         child.mdatasize for child in node.processing_buffer
                     )
 
-                    node.score = node.memcap - cluster_head_memـcons
-                    particle_total_score += node.score
-                    cluster_delay = cluster_head_memـcons / node.pspeed
+                    node.memcons = node.memcap - cluster_head_memcons
+                    total_memcons += node.memcons
+                    cluster_delay = cluster_head_memcons / node.pspeed
                     cluster_delays.append(cluster_delay)
 
                     # Print details for the cluster
-                    print(f"AgTrainer: {node.label}, Cluster Mem Consumption: {cluster_head_memـcons}, Cluster Delay: {cluster_delay:.2f}, Score {node.score}")
+                    print(f"AgTrainer: {node.label}, Cluster Mem Consumption: {cluster_head_memcons}, Cluster Delay: {cluster_delay:.2f}, MemCons: {node.memcons}")
                     
                     for child in node.processing_buffer:
-                        print(f"  Trainer: {child.label}, Mem Consumption: {child.mdatasize}")
+                        print(f"Trainer: {child.label}, MemCons: {child.mdatasize}")
 
             # Find the maximum cluster delay for the level
             if cluster_delays:
                 max_cluster_delay = max(cluster_delays)
-                total_delay += max_cluster_delay  # Add max delay of the level to the total delay
+                total_process_delay += max_cluster_delay  # Add max delay of the level to the total delay
                 print(f"Level Max Cluster Delay: {max_cluster_delay:.2f}\n")
 
-        print(f"Total Processing Delay: {total_delay:.2f}")
-        print(f"Total Score : {particle_total_score}")
+        print(f"Total Processing Delay: {total_process_delay:.2f}")
+        print(f"Total Memory Consumption: {total_memcons}")
 
+        return total_process_delay , total_memcons 
 
 
 def generate_hierarchy(depth, width):
@@ -191,18 +192,18 @@ def generate_hierarchy(depth, width):
     return root
 
 
-def print_tree(node, level=0, is_last=True, prefix=""):
+def printTree(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
     if node.is_aggregator : 
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, Score : {node.score})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, MemCons: {node.memcons})")
 
     elif node.is_aggregator == False :
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, Score : {node.score})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, MemCons: {node.memcons})")
 
     if node.is_aggregator :
         for i, child in enumerate(node.processing_buffer):
             new_prefix = prefix + ("    " if is_last else "│   ")
-            print_tree(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
+            printTree(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
 
 
 def changeRole(client , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
@@ -218,7 +219,6 @@ def takeAwayRole(client) :                 # This function traverses the Client_
 
 #                        new pos  -> [0 , 1 , 2 , 3 , 4 , 5 , 6]
 def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :            # This function has the iterative approach to perform change role and take away role
-    
     for new_pos , clid in enumerate(pso_particle) : 
         for client in Client_list : 
             if client.label == list(Role_dictionary.keys())[new_pos] :
@@ -231,7 +231,7 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
         if client.label == None :
             client.label = Role_buffer.pop()    
             client.is_aggregator = False 
-            client.score = 0
+            client.memcons = 0
     
         if client.is_aggregator : 
             if len(client.processing_buffer) == 0 : 
@@ -245,7 +245,7 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
         if client.label == list(Role_dictionary.keys())[0] :
             return client
 
-def update_velocity(current_velocity, current_position, personal_best, global_best, w, c1, c2):
+def updateVelocity(current_velocity, current_position, personal_best, global_best, w, c1, c2):
     r1 = [random.random() for _ in range(len(current_velocity))]
     r2 = [random.random() for _ in range(len(current_velocity))]
     
@@ -263,7 +263,7 @@ def main() :
     Evaluator.calculate_processing_cost(root)
 
     print("\nGenerated Hierarchy : ")
-    print_tree(root)
+    printTree(root)
     
     print("\n############## TREE AFTER REARRANGEMENT ##################\n")
     root = reArrangeHierarchy()
@@ -271,7 +271,14 @@ def main() :
     Evaluator.calculate_processing_cost(root)
     
     print("\nGenerated Hierarchy : ")
-    print_tree(root)
+    printTree(root)
+
+    swarm = Swarm(pop_n)
+
+    # current_position = [8, 9, 10, 11, 12, 13, 14]
+    # current_velocity = [0, 0, 0, 0, 0, 0, 0]
+
+    # updateVelocity()
 
 
 
