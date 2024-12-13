@@ -230,7 +230,7 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
         if client.label == None :
             client.label = Role_buffer.pop()    
             client.is_aggregator = False 
-            client.memcons = 0
+            client.memscore = 0
     
         if client.is_aggregator : 
             if len(client.processing_buffer) == 0 : 
