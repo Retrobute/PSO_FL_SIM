@@ -118,7 +118,7 @@ class Evaluator :
                     cluster_delays.append(cluster_delay)
 
                     # Print details for the cluster
-                    print(f"AgTrainer: {node.label}, Cluster Head MemCons : {cluster_head_memcons}, Cluster Delay: {cluster_delay:.2f}, Memory Score: {node.memscore}")
+                    print(f"AgTrainer: {node.label}, Memory Consumption : {cluster_head_memcons}, Cluster Delay: {cluster_delay:.2f}, Memory Score: {node.memscore}")
                     
                     for child in node.processing_buffer:
                         print(f"Trainer: {child.label}, Memory Score: {child.mdatasize}")
