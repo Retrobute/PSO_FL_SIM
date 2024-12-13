@@ -1,12 +1,14 @@
-from random import randint
-import re
+from random import randint , random
 from time import sleep as delay
+
+# System parameters
+DEPTH = 3
+WIDTH = 2
 
 # Global parameters
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
-trainer_pattern = r".*_.*"
 
 # PSO parameters
 b = 0.00316             # Penalty coefficient
@@ -18,27 +20,36 @@ pop_n = 30              # Population number
 vmax = 0.1              # Maximum velocity
 max_iter = 100          # Maximum iteration
 conv = 0.0001           # Convergence value
-
-# System parameters
-DEPTH = 3
-WIDTH = 2
+particle_length = (WIDTH * DEPTH) - 1 / (WIDTH - 1)         
 
 # Particle class
 class Particle :
     def __init__(self, pos , velocity) : 
-        self.pos = pos 
+        self.pos = pos
         self.velocity = velocity
         self.best_pos = self.pos.copy()
-    
+        self.score = 0
+
 # Swarm class
 class Swarm : 
-    def __init__(self , pop_n , vmax) :
-        self.particles = []
+    def __init__(self , pop_n) :
+        self.particles = [self.__generate_particles() for _ in range(pop_n)]
         self.best_pos = None 
+            
+    def __generate_particles(self) : 
+        root = generate_hierarchy(DEPTH , WIDTH)
+        particle = [root]
+        
+        def extract_inner_clients(parent) : 
+            for child in parent.processing_buffer : 
+                if child.is_aggregator : 
+                    particle.append(child)
+                    extract_inner_clients(child)
 
-        for _ in range(pop_n) :
-            pass 
-
+        extract_inner_clients(root)
+        
+        return particle
+        
 class Client :
     def __init__(self, memcap, mdatasize, client_id , label , pspeed , is_aggregator=False) :
         self.memcap = memcap 
@@ -48,8 +59,9 @@ class Client :
         self.is_aggregator = is_aggregator
         self.client_id = client_id  
         self.processing_buffer = []
+        self.score = 0
 
-    def changeRoleToAggregator(self , pspeed) :
+    def changeRoleToAggregator(self) :
         self.is_aggregator = True
 
     def changeRoleToTrainer(self) :
@@ -70,7 +82,8 @@ class Evaluator :
     def calculate_processing_cost(master):
         bfs_queue = [master]  # Start with the root node
         levels = []           # List to store nodes level by level
-        temp_mdatasize = 0 
+        total_delay = 0
+        particle_total_score = 0 
 
         # Perform BFS to group nodes by levels
         while bfs_queue:
@@ -88,8 +101,6 @@ class Evaluator :
 
         levels.reverse()
 
-        total_delay = 0
-
         # Calculate delays level by level
         for level in levels:
             cluster_delays = []  
@@ -98,17 +109,18 @@ class Evaluator :
                 if node.is_aggregator :
 
                     # Update the node's mdatasize with its children's cumulative memory size
-                    cluster_mem = node.mdatasize + sum(
+                    cluster_head_memـcons = node.mdatasize + sum(
                         child.mdatasize for child in node.processing_buffer
                     )
-                    temp_mdatasize = cluster_mem
-                    # node.mdatasize = cluster_mem  # Update the node's mdatasize for parent-level calculations
 
-                    cluster_delay = cluster_mem / node.pspeed
+                    node.score = node.memcap - cluster_head_memـcons
+                    particle_total_score += node.score
+                    cluster_delay = cluster_head_memـcons / node.pspeed
                     cluster_delays.append(cluster_delay)
 
                     # Print details for the cluster
-                    print(f"AgTrainer: {node.label}, Cluster Mem Consumption: {cluster_mem}, Cluster Delay: {cluster_delay:.2f}")
+                    print(f"AgTrainer: {node.label}, Cluster Mem Consumption: {cluster_head_memـcons}, Cluster Delay: {cluster_delay:.2f}, Score {node.score}")
+                    
                     for child in node.processing_buffer:
                         print(f"  Trainer: {child.label}, Mem Consumption: {child.mdatasize}")
 
@@ -119,6 +131,8 @@ class Evaluator :
                 print(f"Level Max Cluster Delay: {max_cluster_delay:.2f}\n")
 
         print(f"Total Processing Delay: {total_delay:.2f}")
+        print(f"Total Score : {particle_total_score}")
+
 
 
 def generate_hierarchy(depth, width):
@@ -129,7 +143,7 @@ def generate_hierarchy(depth, width):
     def create_agtrainer(label_prefix, level):
         pspeed = randint(5, 15)
         memcap = randint(10, 50)
-        mdatasize = randint(5, 20)
+        mdatasize = 5 # in the beggining it's a fixed value but in the future as a stretch goal we can have variable MDataSize due to quantization and knowledge distillation techniques
         length = len(Client_list) 
         new_client = Client(memcap, mdatasize, length, f"t{label_prefix}ag{level}", pspeed, True)
         Client_list.append(new_client)
@@ -140,7 +154,7 @@ def generate_hierarchy(depth, width):
     def create_trainer(label_prefix):
         pspeed = randint(5, 15)
         memcap = randint(10, 50)
-        mdatasize = randint(5, 20) 
+        mdatasize = 5 
         length = len(Client_list)
         new_client = Client(memcap, mdatasize, length, label_prefix , pspeed)
         Client_list.append(new_client)
@@ -180,10 +194,10 @@ def generate_hierarchy(depth, width):
 def print_tree(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
     if node.is_aggregator : 
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, Score : {node.score})")
 
     elif node.is_aggregator == False :
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, Score : {node.score})")
 
     if node.is_aggregator :
         for i, child in enumerate(node.processing_buffer):
@@ -192,14 +206,13 @@ def print_tree(node, level=0, is_last=True, prefix=""):
 
 
 def changeRole(client , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
-    if client.is_aggregator == False : 
-        Role_buffer.append(client.label)  
+    if not client.is_aggregator : 
+        Role_buffer.append(client.label) 
     client.processing_buffer = []
     client.label = list(Role_dictionary.keys())[new_pos]
     client.is_aggregator = True
-
-def takeAwayRole(client) :  
-                                           # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
+    
+def takeAwayRole(client) :                 # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
     client.label = None
     client.processing_buffer = []             
 
@@ -213,11 +226,12 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
 
             if client.client_id == clid : 
                 changeRole(client , new_pos)
-
+            
     for client in Client_list : 
         if client.label == None :
             client.label = Role_buffer.pop()    
             client.is_aggregator = False 
+            client.score = 0
     
         if client.is_aggregator : 
             if len(client.processing_buffer) == 0 : 
@@ -230,31 +244,34 @@ def reArrangeHierarchy(pso_particle=[8 , 9 , 10 , 11 , 12 , 13 , 14]) :         
     for client in Client_list :
         if client.label == list(Role_dictionary.keys())[0] :
             return client
-        
 
-def reLabelClients() :
-    pass
-
+def update_velocity(current_velocity, current_position, personal_best, global_best, w, c1, c2):
+    r1 = [random.random() for _ in range(len(current_velocity))]
+    r2 = [random.random() for _ in range(len(current_velocity))]
+    
+    inertia = [w * v for v in current_velocity]
+    cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
+    social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
+    
+    new_velocity = [inertia[i] + cognitive[i] + social[i] for i in range(len(current_velocity))]
+    return new_velocity    
 
 def main() :
     print("\n############## TREE BEFORE REARRANGEMENT ##################\n")
     root = generate_hierarchy(depth=DEPTH, width=WIDTH)
-    
-    # Display the tree
-    print("Generated Hierarchy Tree :")
-    print_tree(root)
-    print("\n")
-    Evaluator.calculate_processing_cost(root)
-    
 
+    Evaluator.calculate_processing_cost(root)
+
+    print("\nGenerated Hierarchy : ")
+    print_tree(root)
+    
+    print("\n############## TREE AFTER REARRANGEMENT ##################\n")
     root = reArrangeHierarchy()
-    print("\n############## RE ARRANGED TREE ##################\n")
-    
 
-    print("Generated Hierarchy Tree :")
-    print_tree(root)
-    print("\n")
     Evaluator.calculate_processing_cost(root)
+    
+    print("\nGenerated Hierarchy : ")
+    print_tree(root)
 
 
 
