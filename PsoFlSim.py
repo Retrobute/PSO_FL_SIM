@@ -19,7 +19,6 @@ iw = 0.5                                    # Inertia Weight
 c1 = 2.0                                    # Pbest coefficient
 c2 = 2.0                                    # Gbest coefficient
 pop_n = 3                                   # Population number
-vmax = 2                                    # Maximum velocity
 max_iter = 1000                             # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
