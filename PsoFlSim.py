@@ -1,3 +1,4 @@
+
 from random import randint , random , sample
 from time import sleep as delay
 from math import floor 
@@ -12,14 +13,14 @@ DEPTH = 3
 WIDTH = 2
 
 # PSO parameters
-b = 0.00316                                 # Penalty coefficient
-a = 0.025                                   # Total delay coefficient
+a = 0.025                                   # Total Processing Delay coefficient
+b = 0.00316                                 # Total Memscore Coefficient
 iw = 0.5                                    # Inertia Weight    
 c1 = 2.0                                    # Pbest coefficient
 c2 = 2.0                                    # Gbest coefficient
 pop_n = 3                                   # Population number
 vmax = 2                                    # Maximum velocity
-max_iter = 1000                              # Maximum iteration
+max_iter = 1000                             # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
 global_best = 0.8                           # NOTE : Temporary value , change it later !!!
@@ -356,8 +357,3 @@ def main() :
 
 if __name__ == "__main__" :
     main()
-
-
-
-
-
