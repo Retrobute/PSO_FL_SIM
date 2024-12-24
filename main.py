@@ -1,4 +1,5 @@
 
+from measurements.tools.excel_maker import write_to_excel
 from random import randint , random , sample
 from time import sleep as delay
 from math import floor 
@@ -11,18 +12,37 @@ Role_dictionary = {}
 # System parameters
 DEPTH = 3
 WIDTH = 2
-
-# PSO parameters
-a = 0.025                                   # Total Processing Delay coefficient
-b = 0.00316                                 # Total Memscore Coefficient
-iw = 0.5                                    # Inertia Weight    
-c1 = 2.0                                    # Pbest coefficient
-c2 = 2.0                                    # Gbest coefficient
-pop_n = 3                                   # Population number
+                                            
+# PSO parameters                            # TODO : Seed for randomness
+a = random()                                # Total Processing Delay coefficient
+b = random()                                # Total Memscore Coefficient
+iw = random()                               # Inertia Weight    
+c1 = random()                               # Pbest coefficient
+c2 = random()                               # Gbest coefficient
+pop_n = 10                                  # Population number
 max_iter = 1000                             # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
 global_best = 0.8                           # NOTE : Temporary value , change it later !!!
+
+# Excel Samples & Related Params
+particle_samples = []
+spc = 100                                    # Sample particles count ( for a row )
+step = max_iter * pop_n // spc
+excel_dict = {
+    "depth"         : DEPTH,
+    "width"         : WIDTH,
+    "a"             : a ,
+    "b"             : b ,
+    "iw"            : iw,
+    "c1"            : c1,
+    "c2"            : c2,
+    "pop_n"         : pop_n,
+    "max_iter"      : max_iter,
+    "conv"          : conv,
+    "dimensions"    : dimensions,
+    "global_best"   : global_best,
+}
 
 # Particle class
 class Particle :
@@ -136,7 +156,7 @@ def processing_cost(master):
     # print(f"Total Processing Delay: {total_process_delay:.2f}")
     # print(f"Total Memory Score: {total_memscore}")
 
-    return ((a * 1/total_process_delay) + (b * total_memscore)) , total_process_delay , total_memscore
+    return (a * 1/total_process_delay) + (b * total_memscore) , total_process_delay , total_memscore
 
 
 def generate_hierarchy(depth, width):
@@ -296,33 +316,13 @@ def applyVelocity(p_position , p_velocity) :
 
     return new_position 
 
-def main() :
-
-    # print("\n############## TREE BEFORE REARRANGEMENT ##################\n")
-    # root = generate_hierarchy(depth=DEPTH, width=WIDTH)
-
-    # _ , _ , mem_score = processing_cost(root)
-
-    # print("\nGenerated Hierarchy : ")
-    # printTree(root)
-    # print("Mem Score : " , mem_score)
-    
-    # print("\n############## TREE AFTER REARRANGEMENT ##################\n")
-    # pos = [8 , 9 , 10 , 11 , 12 , 13 , 14]
-    # root = reArrangeHierarchy(pos)
-
-    # _ , _ , mem_score = processing_cost(root)
-    
-    # print("\nGenerated Hierarchy : ")
-    # printTree(root)
-    # print("Mem Score : " , mem_score)
+def PSO_FL_SIM() :
 
     counter = 1 
 
     swarm = Swarm(pop_n , dimensions)
 
-
-    while counter < max_iter : 
+    while counter <= max_iter : 
         for particle in swarm.particles :   
             
             root = reArrangeHierarchy(particle.best_pos)
@@ -342,17 +342,21 @@ def main() :
             if particle.fitness > swarm.global_best_particle.fitness :
                 swarm.global_best_particle = particle
             
-            print(f"Fitness : {new_pos_fitness} , Total Processing Delay : {tp} , Total Memory Score : {tm}")
+            # print(f"Fitness : {new_pos_fitness} , Total Processing Delay : {tp} , Total Memory Score : {tm}")
             
-            with open("./result.txt" , "a+") as file : 
-                file.write(f"Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
+            # with open("./measurements/results/result.txt" , "a+") as file : 
+            #     file.write(f"Iter : {counter} , Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
+                
+            if counter % step == 0 : 
+                particle_samples.append(f"{counter} , {new_pos_fitness:.4f} , {tp:.4f} , {tm}")
 
-        if abs(swarm.global_best_particle.fitness - global_best) < conv : 
-            break
+            if abs(swarm.global_best_particle.fitness - global_best) < conv : # NOTE : this function has changed and came into inner scope of the loop
+                print("-----BREAK HERE-----")
+                break
 
         counter += 1
-    
 
+    write_to_excel(excel_dict , particle_samples)
 
-if __name__ == "__main__" :
-    main()
+if __name__ == "__main__" : 
+    PSO_FL_SIM()
