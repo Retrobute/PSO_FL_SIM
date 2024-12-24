@@ -28,7 +28,7 @@ global_best = 0.8                           # NOTE : Temporary value , change it
 # Excel Samples & Related Params
 particle_samples = []
 spc = 100                                    # Sample particles count ( for a row )
-step = max_iter * pop_n // spc
+steps = max_iter * pop_n // spc
 excel_dict = {
     "depth"         : DEPTH,
     "width"         : WIDTH,
@@ -347,7 +347,7 @@ def PSO_FL_SIM() :
             # with open("./measurements/results/result.txt" , "a+") as file : 
             #     file.write(f"Iter : {counter} , Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
                 
-            if counter % step == 0 : 
+            if counter % steps == 0 : 
                 particle_samples.append(f"{counter} , {new_pos_fitness:.4f} , {tp:.4f} , {tm}")
 
             if abs(swarm.global_best_particle.fitness - global_best) < conv : # NOTE : this function has changed and came into inner scope of the loop
