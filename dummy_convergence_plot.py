@@ -7,10 +7,8 @@ y = []
 cap = 1000
 for i in range(1,cap + 1):
     x.append(i)
-    y.append(math.log(i/(cap)))
+    y.append(-1 * math.log(math.sqrt(math.sqrt(math.sqrt(i/(cap))))))
     print(y)
 
-
 plt.plot(x,y)
-
 plt.show()
