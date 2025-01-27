@@ -14,8 +14,8 @@ DEPTH = 3
 WIDTH = 2
                                             
 # PSO parameters                            # TODO : Seed for randomness
-a = random()                                # Total Processing Delay coefficient
-b = random()                                # Total Memscore Coefficient
+a = 50                               # Total Processing Delay coefficient ##TODO: From
+b = 0                                # Total Memscore Coefficient
 iw = random()                               # Inertia Weight    
 c1 = random()                               # Pbest coefficient
 c2 = random()                               # Gbest coefficient
@@ -156,7 +156,7 @@ def processing_cost(master):
     # print(f"Total Processing Delay: {total_process_delay:.2f}")
     # print(f"Total Memory Score: {total_memscore}")
 
-    return (a * 1/total_process_delay) + (b * total_memscore) , total_process_delay , total_memscore
+    return (a * ((1/total_process_delay))) + (b * total_memscore) , total_process_delay , total_memscore
 
 
 def generate_hierarchy(depth, width):
@@ -344,11 +344,11 @@ def PSO_FL_SIM() :
             
             # print(f"Fitness : {new_pos_fitness} , Total Processing Delay : {tp} , Total Memory Score : {tm}")
             
-            # with open("./measurements/results/result.txt" , "a+") as file : 
-            #     file.write(f"Iter : {counter} , Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
+            with open("./measurements/results/result.txt" , "a+") as file : 
+                file.write(f"Iter : {counter} , Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
                 
             if counter % steps == 0 : 
-                particle_samples.append(f"{counter} , {new_pos_fitness:.4f} , {tp:.4f} , {tm}")
+                particle_samples.append(f"{counter} , {new_pos_fitness:.3f} , {tp:.3f} , {tm}")
 
             if abs(swarm.global_best_particle.fitness - global_best) < conv : # NOTE : this function has changed and came into inner scope of the loop
                 print("-----BREAK HERE-----")
@@ -356,7 +356,7 @@ def PSO_FL_SIM() :
 
         counter += 1
 
-    write_to_excel(excel_dict , particle_samples)
+    # write_to_excel(excel_dict , particle_samples)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
