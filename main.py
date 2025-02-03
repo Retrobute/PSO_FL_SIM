@@ -12,7 +12,7 @@ b = 0                                       # Total Memscore Coefficient
 iw = 0.5                                    # Inertia Weight    
 c1 = 0.5                                    # Pbest coefficient
 c2 = 0.5                                    # Gbest coefficient
-pop_n = 20                                   # Population number
+pop_n = 3                                   # Population number
 max_iter = 100                              # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
@@ -321,7 +321,6 @@ def PSO_FL_SIM() :
             
             # root = reArrangeHierarchy(particle.best_pos)
             old_pos_fitness , _ , _ = processing_fitness(root)
-            
             new_velocity = updateVelocity(particle.velocity , particle.pos , particle.best_pos , swarm.global_best_particle.best_pos , iw , c1 , c2)
             new_position = applyVelocity(particle.pos , new_velocity)
             root = reArrangeHierarchy(new_position)
@@ -334,12 +333,13 @@ def PSO_FL_SIM() :
                 particle.pos = new_position 
                 particle.best_pos = particle.pos
 
+            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.4f} , gfitness : {swarm.global_best_particle.fitness:.4f}")
             if particle.fitness > swarm.global_best_particle.fitness :
+                print(f"particle fitness : {particle.fitness} , swarm global best : {swarm.global_best_particle.fitness}")
                 swarm.global_best_particle = particle
                 swarm.global_best_particle.fitness = particle.fitness
 
             # print(f"new_velocity : {new_velocity} , new position : {new_position}")
-            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.4f} , gfitness : {swarm.global_best_particle.fitness:.4f}")
         print("_______________________")
         txt_info.append((counter , swarm.global_best_particle.fitness , tp , tm))
         fintess_results.append(swarm.global_best_particle.fitness)
