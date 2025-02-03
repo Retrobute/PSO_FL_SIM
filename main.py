@@ -7,12 +7,12 @@ from math import floor
 root = None 
 
 # PSO parameters                            
-a = 1                                    # Total Processing Delay coefficient 
-b = 0                                     # Total Memscore Coefficient
+a = 1                                       # Total Processing Delay coefficient 
+b = 0                                       # Total Memscore Coefficient
 iw = 0.5                                    # Inertia Weight    
-c1 = 0.2                                    # Pbest coefficient
-c2 = 0.8                                    # Gbest coefficient
-pop_n = 15                                  # Population number
+c1 = 0.5                                    # Pbest coefficient
+c2 = 0.5                                    # Gbest coefficient
+pop_n = 20                                   # Population number
 max_iter = 100                              # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
@@ -146,7 +146,7 @@ def processing_fitness(master):
     # print(f"Total Processing Delay: {total_process_delay:.2f}")
     # print(f"Total Memory Score: {total_memscore}")
     
-    return  a * ((1 / (total_process_delay + 1)) + (b * total_memscore)) , total_process_delay , total_memscore
+    return  round(a * ((1 / (total_process_delay + 1)) + (b * total_memscore)) , 2) , total_process_delay , total_memscore
 
 
 def generate_hierarchy(depth, width):
@@ -265,7 +265,7 @@ def updateVelocity(current_velocity, current_position, personal_best, global_bes
     cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
     social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
     
-    new_velocity = [inertia[i] + cognitive[i] + social[i] for i in range(len(current_velocity))]
+    new_velocity = [floor(inertia[i] + cognitive[i] + social[i]) for i in range(len(current_velocity))]
     return new_velocity    
 
 def applyVelocity(p_position , p_velocity) : 
@@ -321,7 +321,7 @@ def PSO_FL_SIM() :
             
             # root = reArrangeHierarchy(particle.best_pos)
             old_pos_fitness , _ , _ = processing_fitness(root)
-
+            
             new_velocity = updateVelocity(particle.velocity , particle.pos , particle.best_pos , swarm.global_best_particle.best_pos , iw , c1 , c2)
             new_position = applyVelocity(particle.pos , new_velocity)
             root = reArrangeHierarchy(new_position)
@@ -339,8 +339,8 @@ def PSO_FL_SIM() :
                 swarm.global_best_particle.fitness = particle.fitness
 
             # print(f"new_velocity : {new_velocity} , new position : {new_position}")
-            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.2f} , gfitness : {swarm.global_best_particle.fitness:.2f}")
-
+            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.4f} , gfitness : {swarm.global_best_particle.fitness:.4f}")
+        print("_______________________")
         txt_info.append((counter , swarm.global_best_particle.fitness , tp , tm))
         fintess_results.append(swarm.global_best_particle.fitness)
         iterations.append(counter)
