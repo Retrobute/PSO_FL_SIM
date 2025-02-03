@@ -1,48 +1,38 @@
 
-from measurements.tools.excel_maker import write_to_excel
-from random import randint , random , sample
-from time import sleep as delay
+from measurements.tools.display_output import *
+from random import randint , random , sample , seed 
 from math import floor 
 
 # Global parameters
-Client_list = []
-Role_buffer = []
-Role_dictionary = {}
+root = None 
 
-# System parameters
-DEPTH = 3
-WIDTH = 2
-                                            
-# PSO parameters                            # TODO : Seed for randomness
-a = 50                               # Total Processing Delay coefficient ##TODO: From
-b = 0                                # Total Memscore Coefficient
-iw = random()                               # Inertia Weight    
-c1 = random()                               # Pbest coefficient
-c2 = random()                               # Gbest coefficient
-pop_n = 10                                  # Population number
-max_iter = 1000                             # Maximum iteration
+# PSO parameters                            
+a = 1                                    # Total Processing Delay coefficient 
+b = 0                                     # Total Memscore Coefficient
+iw = 0.5                                    # Inertia Weight    
+c1 = 0.2                                    # Pbest coefficient
+c2 = 0.8                                    # Gbest coefficient
+pop_n = 15                                  # Population number
+max_iter = 100                              # Maximum iteration
 conv = 0.1                                  # Convergence value
 dimensions = 7                              # TODO : Make it dynamic, later.
 global_best = 0.8                           # NOTE : Temporary value , change it later !!!
 
-# Excel Samples & Related Params
-particle_samples = []
-spc = 100                                    # Sample particles count ( for a row )
-steps = max_iter * pop_n // spc
-excel_dict = {
-    "depth"         : DEPTH,
-    "width"         : WIDTH,
-    "a"             : a ,
-    "b"             : b ,
-    "iw"            : iw,
-    "c1"            : c1,
-    "c2"            : c2,
-    "pop_n"         : pop_n,
-    "max_iter"      : max_iter,
-    "conv"          : conv,
-    "dimensions"    : dimensions,
-    "global_best"   : global_best,
-}
+# System parameters
+DEPTH = 3
+WIDTH = 2
+Client_list = []
+Role_buffer = []
+Role_dictionary = {}
+randomness_seed = 50
+tracking_mode = True  
+                                            
+# TXT output file required parameters
+txt_info = []
+
+# Graph illustration parameters 
+fintess_results = []
+iterations = []
 
 # Particle class
 class Particle :
@@ -54,12 +44,11 @@ class Particle :
 
 # Swarm class
 class Swarm : 
-    def __init__(self , pop_n , dimensions) :
-        self.particles = self.__generate_random_particles(pop_n , dimensions)
+    def __init__(self , pop_n , dimensions , root) :
+        self.particles = self.__generate_random_particles(pop_n , dimensions , root)
         self.global_best_particle = max(self.particles, key=lambda particle: particle.fitness)
 
-    def __generate_random_particles(self, pop_n, dimensions):
-        root = generate_hierarchy(DEPTH , WIDTH)
+    def __generate_random_particles(self, pop_n, dimensions , root):
         init_particle_pos = [client.client_id for client in Client_list if client.is_aggregator]
         cll = len(Client_list)
         particles = []
@@ -68,11 +57,12 @@ class Swarm :
             if i != 0 : 
                 particle_pos = sample(range(cll), dimensions)
                 root = reArrangeHierarchy(particle_pos)  
+
             else : 
                 particle_pos = init_particle_pos
-            fitness, _ , _ = processing_cost(root)
-            # velocity = [randint(-cll, cll) for _ in range(dimensions)]          # method 1 
-            velocity = [0 for _ in range(dimensions)]                          # method 2
+
+            fitness, _ , _ = processing_fitness(root)
+            velocity = [0 for _ in range(dimensions)]                          
             particles.append(Particle(particle_pos, fitness, velocity))
 
         return particles
@@ -101,24 +91,24 @@ class Client :
         self.processing_buffer = []  
 
 
-# Cost function
-def processing_cost(master):
-    bfs_queue = [master]                     # Start with the root node
+# Fitness function
+def processing_fitness(master):
+    bft_queue = [master]                     # Start with the root node
     levels = []                              # List to store nodes level by level
     total_process_delay = 0
     total_memscore = 0 
 
-    # Perform BFS to group nodes by levels
-    while bfs_queue:
-        level_size = len(bfs_queue)
+    # Perform BFT to group nodes by levels
+    while bft_queue:
+        level_size = len(bft_queue)
         current_level = []
 
         for _ in range(level_size):
-            current_node = bfs_queue.pop(0)
+            current_node = bft_queue.pop(0)
             current_level.append(current_node)
 
             if current_node.is_aggregator :
-                bfs_queue.extend(current_node.processing_buffer)  
+                bft_queue.extend(current_node.processing_buffer)  
 
         levels.append(current_level)  
 
@@ -155,8 +145,8 @@ def processing_cost(master):
 
     # print(f"Total Processing Delay: {total_process_delay:.2f}")
     # print(f"Total Memory Score: {total_memscore}")
-
-    return (a * ((1/total_process_delay))) + (b * total_memscore) , total_process_delay , total_memscore
+    
+    return  a * ((1 / (total_process_delay + 1)) + (b * total_memscore)) , total_process_delay , total_memscore
 
 
 def generate_hierarchy(depth, width):
@@ -185,8 +175,8 @@ def generate_hierarchy(depth, width):
         trainer_list.append(new_client)
         return new_client
 
-    root = create_agtrainer(0, 0)
-    current_level = [root]
+    fl_root = create_agtrainer(0, 0)
+    current_level = [fl_root]
     level_agtrainer_list = []
 
     for d in range(1, depth):
@@ -212,7 +202,7 @@ def generate_hierarchy(depth, width):
         level_agtrainer_list = []
         current_level = next_level
 
-    return root
+    return fl_root
 
 
 def printTree(node, level=0, is_last=True, prefix=""):
@@ -267,13 +257,13 @@ def reArrangeHierarchy(pso_particle) :            # This function has the iterat
         if client.label == list(Role_dictionary.keys())[0] :
             return client
 
-def updateVelocity(current_velocity, current_position, personal_best, global_best, w, c1, c2):
+def updateVelocity(current_velocity, current_position, personal_best, global_best, iw, c1, c2):
     r1 = [random() for _ in range(len(current_velocity))]
     r2 = [random() for _ in range(len(current_velocity))]
     
-    inertia = [floor(w * v) for v in current_velocity]
-    cognitive = [floor(c1 * r1[i] * (personal_best[i] - current_position[i])) for i in range(len(current_velocity))]
-    social = [floor(c2 * r2[i] * (global_best[i] - current_position[i])) for i in range(len(current_velocity))]
+    inertia = [iw * v for v in current_velocity]
+    cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
+    social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
     
     new_velocity = [inertia[i] + cognitive[i] + social[i] for i in range(len(current_velocity))]
     return new_velocity    
@@ -317,46 +307,52 @@ def applyVelocity(p_position , p_velocity) :
     return new_position 
 
 def PSO_FL_SIM() :
+    root = generate_hierarchy(DEPTH , WIDTH)
+    
+    if tracking_mode : 
+        seed(randomness_seed)
 
-    counter = 1 
+    counter = 1
 
-    swarm = Swarm(pop_n , dimensions)
+    swarm = Swarm(pop_n , dimensions , root)
 
     while counter <= max_iter : 
         for particle in swarm.particles :   
             
-            root = reArrangeHierarchy(particle.best_pos)
-            old_pos_fitness , _ , _ = processing_cost(root)
+            # root = reArrangeHierarchy(particle.best_pos)
+            old_pos_fitness , _ , _ = processing_fitness(root)
 
             new_velocity = updateVelocity(particle.velocity , particle.pos , particle.best_pos , swarm.global_best_particle.best_pos , iw , c1 , c2)
             new_position = applyVelocity(particle.pos , new_velocity)
             root = reArrangeHierarchy(new_position)
-            particle.pos = new_position 
 
-            new_pos_fitness , tp , tm = processing_cost(root)
-            particle.fitness = new_pos_fitness
+            new_pos_fitness , tp , tm = processing_fitness(root)
             
-            if new_pos_fitness > old_pos_fitness : 
+            if new_pos_fitness > old_pos_fitness :
+                particle.fitness = new_pos_fitness
+                particle.velocity = new_velocity
+                particle.pos = new_position 
                 particle.best_pos = particle.pos
 
             if particle.fitness > swarm.global_best_particle.fitness :
                 swarm.global_best_particle = particle
-            
-            # print(f"Fitness : {new_pos_fitness} , Total Processing Delay : {tp} , Total Memory Score : {tm}")
-            
-            with open("./measurements/results/result.txt" , "a+") as file : 
-                file.write(f"Iter : {counter} , Fitness : {new_pos_fitness:.4f} , \tTotal Processing Delay : {tp:.4f} , \tTotal Memory Score : {tm:.4f}\n")
-                
-            if counter % steps == 0 : 
-                particle_samples.append(f"{counter} , {new_pos_fitness:.3f} , {tp:.3f} , {tm}")
+                swarm.global_best_particle.fitness = particle.fitness
 
-            if abs(swarm.global_best_particle.fitness - global_best) < conv : # NOTE : this function has changed and came into inner scope of the loop
-                print("-----BREAK HERE-----")
-                break
+            # print(f"new_velocity : {new_velocity} , new position : {new_position}")
+            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.2f} , gfitness : {swarm.global_best_particle.fitness:.2f}")
 
+        txt_info.append((counter , swarm.global_best_particle.fitness , tp , tm))
+        fintess_results.append(swarm.global_best_particle.fitness)
+        iterations.append(counter)
+        
+        if abs(swarm.global_best_particle.fitness - global_best) < conv : 
+            print("-----BREAK HERE-----")                                 
+            break
+        
         counter += 1
-
-    # write_to_excel(excel_dict , particle_samples)
+    
+    output_to_txt(txt_info)
+    illustrate_plot(iterations , fintess_results)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
