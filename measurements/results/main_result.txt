@@ -1,0 +1,5 @@
+Iter : 6 , Fitness : 0.0949 , 	Total Processing Delay : 9.5385 , 	Total Memory Score : 582.0000
+Iter : 6 , Fitness : 0.0996 , 	Total Processing Delay : 9.0404 , 	Total Memory Score : 492.0000
+Iter : 25 , Fitness : 0.1002 , 	Total Processing Delay : 8.9848 , 	Total Memory Score : 478.0000
+Iter : 34 , Fitness : 0.1048 , 	Total Processing Delay : 8.5385 , 	Total Memory Score : 489.0000
+Iter : 36 , Fitness : 0.1087 , 	Total Processing Delay : 8.1984 , 	Total Memory Score : 516.0000

@@ -2,37 +2,40 @@
 from measurements.tools.display_output import *
 from random import randint , random , sample , seed 
 from math import floor 
+import copy 
 
 # Global parameters
-root = None 
 
 # PSO parameters                            
-a = 1                                       # Total Processing Delay coefficient 
-b = 0                                       # Total Memscore Coefficient
-iw = 0.5                                    # Inertia Weight    
-c1 = 0.5                                    # Pbest coefficient
-c2 = 0.5                                    # Gbest coefficient
-pop_n = 3                                   # Population number
-max_iter = 100                              # Maximum iteration
+b = 0.0                                     # Total Memscore Coefficient
+a = 0.8                                     # Total Processing Delay coefficient 
+iw = 1                                      # Inertia Weight    
+c1 = 1                                      # Pbest coefficient
+c2 = 8                                      # Gbest coefficient
+pop_n = 7                                   # Population number
+max_iter = 300                              # Maximum iteration
 conv = 0.1                                  # Convergence value
-dimensions = 7                              # TODO : Make it dynamic, later.
-global_best = 0.8                           # NOTE : Temporary value , change it later !!!
+dimensions = 40                              # TODO : Make it dynamic, later.
+global_best = 0.7                           # NOTE : Temporary value , change it later !!!
 
 # System parameters
-DEPTH = 3
-WIDTH = 2
+DEPTH = 4
+WIDTH = 3
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
 randomness_seed = 50
-tracking_mode = True  
+tracking_mode = False   
                                             
 # TXT output file required parameters
 txt_info = []
+file_path = "./measurements/results/main_result.txt"
 
 # Graph illustration parameters 
-fintess_results = []
-iterations = []
+particles_fitness_results = []
+particles_iterations = []
+gbest_particle_fitness_results = []
+gbest_particle_iterations = []
 
 # Particle class
 class Particle :
@@ -146,7 +149,7 @@ def processing_fitness(master):
     # print(f"Total Processing Delay: {total_process_delay:.2f}")
     # print(f"Total Memory Score: {total_memscore}")
     
-    return  round(a * ((1 / (total_process_delay + 1)) + (b * total_memscore)) , 2) , total_process_delay , total_memscore
+    return  1 / (total_process_delay + 1)  , total_process_delay , total_memscore
 
 
 def generate_hierarchy(depth, width):
@@ -175,8 +178,8 @@ def generate_hierarchy(depth, width):
         trainer_list.append(new_client)
         return new_client
 
-    fl_root = create_agtrainer(0, 0)
-    current_level = [fl_root]
+    root = create_agtrainer(0, 0)
+    current_level = [root]
     level_agtrainer_list = []
 
     for d in range(1, depth):
@@ -202,7 +205,7 @@ def generate_hierarchy(depth, width):
         level_agtrainer_list = []
         current_level = next_level
 
-    return fl_root
+    return root
 
 
 def printTree(node, level=0, is_last=True, prefix=""):
@@ -306,53 +309,58 @@ def applyVelocity(p_position , p_velocity) :
 
     return new_position 
 
-def PSO_FL_SIM() :
-    root = generate_hierarchy(DEPTH , WIDTH)
-    
+def PSO_FL_SIM() :    
     if tracking_mode : 
         seed(randomness_seed)
+
+    root = generate_hierarchy(DEPTH , WIDTH)
+    fitness , tp , _ = processing_fitness(root)
+    print("Tree before PSO :")
+    printTree(root)
+    print(f"Fitness : {fitness} , tp : {tp}\n") 
 
     counter = 1
 
     swarm = Swarm(pop_n , dimensions , root)
 
-    while counter <= max_iter : 
-        for particle in swarm.particles :   
+    while counter <= max_iter: 
+        for particle in swarm.particles:
             
-            # root = reArrangeHierarchy(particle.best_pos)
-            old_pos_fitness , _ , _ = processing_fitness(root)
-            new_velocity = updateVelocity(particle.velocity , particle.pos , particle.best_pos , swarm.global_best_particle.best_pos , iw , c1 , c2)
-            new_position = applyVelocity(particle.pos , new_velocity)
+            new_velocity = updateVelocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
+            new_position = applyVelocity(particle.pos, new_velocity)
             root = reArrangeHierarchy(new_position)
 
-            new_pos_fitness , tp , tm = processing_fitness(root)
-            
-            if new_pos_fitness > old_pos_fitness :
-                particle.fitness = new_pos_fitness
+            new_pos_fitness, tp, tm = processing_fitness(root)
+
+            if new_pos_fitness > particle.fitness:  
+                particle.pos = new_position
+                particle.best_pos = new_position  
                 particle.velocity = new_velocity
-                particle.pos = new_position 
-                particle.best_pos = particle.pos
+                particle.fitness = new_pos_fitness
 
-            print(f"iteration : {counter} , total_processing_delay : {tp:.2f} , pfitness : {particle.fitness:.4f} , gfitness : {swarm.global_best_particle.fitness:.4f}")
-            if particle.fitness > swarm.global_best_particle.fitness :
-                print(f"particle fitness : {particle.fitness} , swarm global best : {swarm.global_best_particle.fitness}")
-                swarm.global_best_particle = particle
-                swarm.global_best_particle.fitness = particle.fitness
+            if particle.fitness > swarm.global_best_particle.fitness:
+                swarm.global_best_particle = copy.deepcopy(particle)              
+                txt_info.append((counter, swarm.global_best_particle.fitness, tp, tm))
+                gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
+                gbest_particle_iterations.append(counter)
+            
+            particles_fitness_results.append(particle.fitness)
+            particles_iterations.append(counter)
 
-            # print(f"new_velocity : {new_velocity} , new position : {new_position}")
-        print("_______________________")
-        txt_info.append((counter , swarm.global_best_particle.fitness , tp , tm))
-        fintess_results.append(swarm.global_best_particle.fitness)
-        iterations.append(counter)
-        
-        if abs(swarm.global_best_particle.fitness - global_best) < conv : 
-            print("-----BREAK HERE-----")                                 
-            break
-        
+        # iw = 0.9 - ((0.5 * counter) / max_iter)  
+
         counter += 1
     
-    output_to_txt(txt_info)
-    illustrate_plot(iterations , fintess_results)
+    root = reArrangeHierarchy(swarm.global_best_particle.pos)
+    fitness , tp , _  = processing_fitness(root)
+    print("Best Found Tree : ")
+    printTree(root)
+    print(f"Fitness : {fitness} , tp : {tp}") 
+    
+    output_to_txt(txt_info , file_path)
+    illustrate_plot(("iteration" , gbest_particle_iterations) , ("gbest particle fitness" , gbest_particle_fitness_results))
+    illustrate_plot(("iteration" , particles_iterations) , ("particles fitness" , particles_fitness_results))
+    
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
