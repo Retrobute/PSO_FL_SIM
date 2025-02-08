@@ -15,7 +15,7 @@ c2 = 8                                      # Gbest coefficient
 pop_n = 7                                   # Population number
 max_iter = 300                              # Maximum iteration
 conv = 0.1                                  # Convergence value
-dimensions = 40                              # TODO : Make it dynamic, later.
+dimensions = 40                             # TODO : Make it dynamic, later.
 global_best = 0.7                           # NOTE : Temporary value , change it later !!!
 
 # System parameters
@@ -36,6 +36,7 @@ particles_fitness_results = []
 particles_iterations = []
 gbest_particle_fitness_results = []
 gbest_particle_iterations = []
+total_processing_delays = []
 
 # Particle class
 class Particle :
@@ -343,6 +344,7 @@ def PSO_FL_SIM() :
                 txt_info.append((counter, swarm.global_best_particle.fitness, tp, tm))
                 gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
                 gbest_particle_iterations.append(counter)
+                total_processing_delays.append(tp)
             
             particles_fitness_results.append(particle.fitness)
             particles_iterations.append(counter)
@@ -360,7 +362,7 @@ def PSO_FL_SIM() :
     output_to_txt(txt_info , file_path)
     illustrate_plot(("iteration" , gbest_particle_iterations) , ("gbest particle fitness" , gbest_particle_fitness_results))
     illustrate_plot(("iteration" , particles_iterations) , ("particles fitness" , particles_fitness_results))
-    
+    illustrate_plot(("iteration" , gbest_particle_iterations) , ("total processing delay" , total_processing_delays))
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
