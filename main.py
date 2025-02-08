@@ -2,6 +2,7 @@
 from measurements.tools.display_output import *
 from random import randint , random , sample , seed 
 from math import floor 
+import time
 import copy 
 
 # Global parameters
@@ -33,10 +34,10 @@ file_path = "./measurements/results/main_result.txt"
 
 # Graph illustration parameters 
 particles_fitness_results = []
-particles_iterations = []
 gbest_particle_fitness_results = []
-gbest_particle_iterations = []
-total_processing_delays = []
+particles_iterations = []
+solutions_iterations = []
+tpd_results = []
 
 # Particle class
 class Particle :
@@ -310,15 +311,17 @@ def applyVelocity(p_position , p_velocity) :
 
     return new_position 
 
+
 def PSO_FL_SIM() :    
     if tracking_mode : 
         seed(randomness_seed)
 
     root = generate_hierarchy(DEPTH , WIDTH)
     fitness , tp , _ = processing_fitness(root)
-    print("Tree before PSO :")
-    printTree(root)
-    print(f"Fitness : {fitness} , tp : {tp}\n") 
+    
+    solutions_iterations.append(0)
+    gbest_particle_fitness_results.append(fitness)
+    tpd_results.append(tp)
 
     counter = 1
 
@@ -343,8 +346,8 @@ def PSO_FL_SIM() :
                 swarm.global_best_particle = copy.deepcopy(particle)              
                 txt_info.append((counter, swarm.global_best_particle.fitness, tp, tm))
                 gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
-                gbest_particle_iterations.append(counter)
-                total_processing_delays.append(tp)
+                tpd_results.append(tp)
+                solutions_iterations.append(counter)
             
             particles_fitness_results.append(particle.fitness)
             particles_iterations.append(counter)
@@ -352,17 +355,11 @@ def PSO_FL_SIM() :
         # iw = 0.9 - ((0.5 * counter) / max_iter)  
 
         counter += 1
-    
-    root = reArrangeHierarchy(swarm.global_best_particle.pos)
-    fitness , tp , _  = processing_fitness(root)
-    print("Best Found Tree : ")
-    printTree(root)
-    print(f"Fitness : {fitness} , tp : {tp}") 
-    
+        
     output_to_txt(txt_info , file_path)
-    illustrate_plot(("iteration" , gbest_particle_iterations) , ("gbest particle fitness" , gbest_particle_fitness_results))
+    illustrate_plot(("iteration" , solutions_iterations) , ("best particle fitness" , gbest_particle_fitness_results) , True)
     illustrate_plot(("iteration" , particles_iterations) , ("particles fitness" , particles_fitness_results))
-    illustrate_plot(("iteration" , gbest_particle_iterations) , ("total processing delay" , total_processing_delays))
+    illustrate_plot(("iteration" , solutions_iterations) , ("total processing delay" , tpd_results) , True)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
