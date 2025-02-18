@@ -2,31 +2,31 @@
 from measurements.tools.display_output import *
 from random import randint , random , sample , seed 
 from math import floor 
-import time
 import copy 
+import numpy as np
 
 # Global parameters
 
 # PSO parameters                            
 b = 0.0                                     # Total Memscore Coefficient
 a = 0.8                                     # Total Processing Delay coefficient 
-iw = 1                                      # Inertia Weight    
-c1 = 1                                      # Pbest coefficient
-c2 = 8                                      # Gbest coefficient
+iw = 0.7                                      # Inertia Weight    
+c1 = 0.1                                   # Pbest coefficient
+c2 = 10                                    # Gbest coefficient
 pop_n = 7                                   # Population number
 max_iter = 300                              # Maximum iteration
 conv = 0.1                                  # Convergence value
-dimensions = 40                             # TODO : Make it dynamic, later.
 global_best = 0.7                           # NOTE : Temporary value , change it later !!!
 
 # System parameters
-DEPTH = 4
-WIDTH = 3
+DEPTH = 3
+WIDTH = 2
+dimension = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))                          
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
-randomness_seed = 50
-tracking_mode = False   
+randomness_seed = 20
+tracking_mode = True   
                                             
 # TXT output file required parameters
 txt_info = []
@@ -49,25 +49,25 @@ class Particle :
 
 # Swarm class
 class Swarm : 
-    def __init__(self , pop_n , dimensions , root) :
-        self.particles = self.__generate_random_particles(pop_n , dimensions , root)
+    def __init__(self , pop_n , dimension , root) :
+        self.particles = self.__generate_random_particles(pop_n , dimension , root)
         self.global_best_particle = max(self.particles, key=lambda particle: particle.fitness)
 
-    def __generate_random_particles(self, pop_n, dimensions , root):
+    def __generate_random_particles(self, pop_n, dimension , root):
         init_particle_pos = [client.client_id for client in Client_list if client.is_aggregator]
         cll = len(Client_list)
         particles = []
 
         for i in range(pop_n):
             if i != 0 : 
-                particle_pos = sample(range(cll), dimensions)
+                particle_pos = sample(range(cll), dimension)
                 root = reArrangeHierarchy(particle_pos)  
 
             else : 
                 particle_pos = init_particle_pos
 
             fitness, _ , _ = processing_fitness(root)
-            velocity = [0 for _ in range(dimensions)]                          
+            velocity = [0 for _ in range(dimension)]                          
             particles.append(Particle(particle_pos, fitness, velocity))
 
         return particles
@@ -94,7 +94,6 @@ class Client :
     def takeAwayRole(self) :                 # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
         self.label = None
         self.processing_buffer = []  
-
 
 # Fitness function
 def processing_fitness(master):
@@ -209,7 +208,6 @@ def generate_hierarchy(depth, width):
 
     return root
 
-
 def printTree(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
     if node.is_aggregator : 
@@ -270,7 +268,7 @@ def updateVelocity(current_velocity, current_position, personal_best, global_bes
     cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
     social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
     
-    new_velocity = [floor(inertia[i] + cognitive[i] + social[i]) for i in range(len(current_velocity))]
+    new_velocity = [inertia[i] + cognitive[i] + social[i] for i in range(len(current_velocity))]
     return new_velocity    
 
 def applyVelocity(p_position , p_velocity) : 
@@ -279,21 +277,21 @@ def applyVelocity(p_position , p_velocity) :
     for a , b in zip(p_position , p_velocity) : 
         np = a + b
         direction =  -1 if np < 0 else 1
-        while True : 
+        # while True : 
 
-            if np < 0 : 
-                np += len(Client_list)
-                continue
+        #     if np < 0 : 
+        #         np += len(Client_list)
+        #         continue
 
-            if np >= len(Client_list) : 
-                np -= len(Client_list)
-                continue
+        #     if np >= len(Client_list) : 
+        #         np -= len(Client_list)
+        #         continue
 
-            if np in new_position :
-                np += direction
-                continue
+        #     if np in new_position :
+        #         np += direction
+        #         continue
             
-            break
+        #     break
 
         new_position.append(np)
 
@@ -310,9 +308,42 @@ def applyVelocity(p_position , p_velocity) :
         #     new_position.append(a + b)
 
     return new_position 
+        
+def stochastic_round(x):
+    x = np.array(x)
+    lower = np.floor(x)
+    upper = np.ceil(x)
+    p = x - lower
+    return np.where(np.random.rand(*x.shape) < p, upper, lower)
 
+def enforce_integer_placement(particle, iteration, max_iterations, num_nodes):
+    """Convert floating-point positions to unique integer node IDs for a single particle."""
+    num_dimensions = len(particle)  # Number of node assignments in this particle
+
+    # Apply stochastic rounding in early iterations, direct rounding in later iterations
+    if iteration < max_iterations * 0.5:
+        rounded_particle = np.array([stochastic_round(v) for v in particle])
+    else:
+        rounded_particle = np.round(particle).astype(int)
+
+    # Clip values to stay within valid range [0, num_nodes - 1]
+    clipped_particle = np.clip(rounded_particle, 0, num_nodes - 1)
+
+    # Enforce uniqueness within the particle
+    unique_values = list(set(clipped_particle))
+
+    # Fill missing slots with random unique values if duplicates were removed
+    while len(unique_values) < num_dimensions:
+        new_value = np.random.randint(0, num_nodes)
+        if new_value not in unique_values:
+            unique_values.append(new_value)
+
+    np.random.shuffle(unique_values)  # Shuffle to avoid bias
+    return np.array(unique_values)
 
 def PSO_FL_SIM() :    
+    global iw 
+
     if tracking_mode : 
         seed(randomness_seed)
 
@@ -321,45 +352,49 @@ def PSO_FL_SIM() :
     
     solutions_iterations.append(0)
     gbest_particle_fitness_results.append(fitness)
-    tpd_results.append(tp)
 
     counter = 1
 
-    swarm = Swarm(pop_n , dimensions , root)
+    swarm = Swarm(pop_n , dimension , root)
 
     while counter <= max_iter: 
         for particle in swarm.particles:
             
             new_velocity = updateVelocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
+            # new_velocity = [randint(-3 , 3) for _ in range(dimension)]
             new_position = applyVelocity(particle.pos, new_velocity)
-            root = reArrangeHierarchy(new_position)
+            new_position_clipped = enforce_integer_placement(new_position, counter, max_iter , dimension)
+            root = reArrangeHierarchy(new_position_clipped)
 
             new_pos_fitness, tp, tm = processing_fitness(root)
+            particle.pos = new_position
+            particle.velocity = new_velocity
 
             if new_pos_fitness > particle.fitness:  
-                particle.pos = new_position
                 particle.best_pos = new_position  
-                particle.velocity = new_velocity
                 particle.fitness = new_pos_fitness
 
             if particle.fitness > swarm.global_best_particle.fitness:
                 swarm.global_best_particle = copy.deepcopy(particle)              
                 txt_info.append((counter, swarm.global_best_particle.fitness, tp, tm))
                 gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
-                tpd_results.append(tp)
                 solutions_iterations.append(counter)
             
+            tpd_results.append(tp)
             particles_fitness_results.append(particle.fitness)
             particles_iterations.append(counter)
+        
+        print(f"Counter : {counter}")
 
-        # iw = 0.9 - ((0.5 * counter) / max_iter)  
+        if iw >= 0.7 : 
+            iw = iw - (0.3 * iw * ((1 * counter) / max_iter))  
 
         counter += 1
         
     output_to_txt(txt_info , file_path)
     illustrate_plot(("iteration" , solutions_iterations) , ("best particle fitness" , gbest_particle_fitness_results) , True)
     illustrate_plot(("iteration" , particles_iterations) , ("particles fitness" , particles_fitness_results))
-    illustrate_plot(("iteration" , solutions_iterations) , ("total processing delay" , tpd_results) , True)
+    illustrate_plot(("iteration" , particles_iterations) , ("total processing delay" , tpd_results) , True)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
