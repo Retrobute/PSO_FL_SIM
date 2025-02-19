@@ -1,2 +1,8 @@
-Iter : 3 , Fitness : 0.0942 , 	Total Processing Delay : 10.6190 , 	Total Memory Score : 471.0000
-Iter : 19 , Fitness : 0.0972 , 	Total Processing Delay : 10.2857 , 	Total Memory Score : 471.0000
+Iter : 1 , Fitness : -9.0238 , 	Total Processing Delay : 9.0238 , 	Total Memory Score : 669.0000
+Iter : 8 , Fitness : -8.7607 , 	Total Processing Delay : 8.7607 , 	Total Memory Score : 690.0000
+Iter : 34 , Fitness : -8.7468 , 	Total Processing Delay : 8.7468 , 	Total Memory Score : 730.0000
+Iter : 49 , Fitness : -8.4690 , 	Total Processing Delay : 8.4690 , 	Total Memory Score : 728.0000
+Iter : 70 , Fitness : -8.2468 , 	Total Processing Delay : 8.2468 , 	Total Memory Score : 660.0000
+Iter : 154 , Fitness : -8.2222 , 	Total Processing Delay : 8.2222 , 	Total Memory Score : 728.0000
+Iter : 182 , Fitness : -8.0940 , 	Total Processing Delay : 8.0940 , 	Total Memory Score : 738.0000
+Iter : 187 , Fitness : -7.5940 , 	Total Processing Delay : 7.5940 , 	Total Memory Score : 759.0000
