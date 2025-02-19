@@ -1,14 +1,11 @@
 
 from measurements.tools.display_output import *
 from random import randint , random , sample , seed 
-from math import floor 
-import time
 import copy 
 
 # Global parameters
 
 # PSO parameters                            
-
 iw = 0.1                                    # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
 c1 = 0.1                                    # Pbest coefficient
 c2 = 10                                     # Gbest coefficient
@@ -35,7 +32,6 @@ gbest_particle_fitness_results = []
 iterations = []
 tpd_buffer = []
 tpds_avg = []
-
 
 # Particle class
 class Particle :
