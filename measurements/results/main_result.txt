@@ -1,0 +1,2 @@
+Iter : 3 , Fitness : 0.0942 , 	Total Processing Delay : 10.6190 , 	Total Memory Score : 471.0000
+Iter : 19 , Fitness : 0.0972 , 	Total Processing Delay : 10.2857 , 	Total Memory Score : 471.0000
