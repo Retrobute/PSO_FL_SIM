@@ -5,12 +5,20 @@ import copy
 
 # Global parameters
 
+#Points:
+#1- when we increase the population, we should also proportionally increase the c1. otherwise we will see fluctuation, plus not having particles converging to a global best.
+# For instnace, if I choose pop_n = 3, then I will go wiht c1 = 0.01. If I choose c1 = 0.1 then it will show fluctuation and sometimes no convergence in the maximum total processing delay plot (check it with seed = 3).
+# But when I increase the pop_n, for instance to 10, then if I keep c1 to 0.01, I would still see convergence, but if I slightly increase c1 to higher value, such as 0.1, then I will not only see convergence, but also a lower final value for the total processing delay to converge to.
+# And if I increase c1 to for instance 0.2, then I will see again that there is more fluctuation, and no convergence.
+
+#2- iw in our case needs to be kept at lower value. I tried with an adaptive iw which would decrease over time, but it is sometime effective, someitmes not. I would not keep the adaptive mode on. so far, I tried 0.1, 0.01, and 0.001.
+#3- Trying with lower particle numbers in our case seems reasonable and so far promissing. It processes faster, and converges faster. But noting that once we go low on the population number, such as pop_n = 3, then we have to keep c1 to 0.01
 # PSO parameters                            
-iw = 0.1                                    # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
-c1 = 0.1                                    # Pbest coefficient
-c2 = 10                                     # Gbest coefficient
-pop_n = 7                                   # Population number
-max_iter = 300                              # Maximum iteration
+iw = .1                                    # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
+c1 = .01                                    # Pbest coefficient
+c2 = 1                                    # Gbest coefficient
+pop_n = 3                                   # Population number
+max_iter = 100                              # Maximum iteration
 conv = 0.1                                  # Convergence value
 global_best = 0.7                           # NOTE : Temporary value , change it later !!!
 
@@ -21,7 +29,7 @@ dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPT
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
-randomness_seed = 50
+randomness_seed = 10
 tracking_mode = True   
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
@@ -31,7 +39,10 @@ particles_fitnesses_avg = []
 gbest_particle_fitness_results = []
 iterations = []
 tpd_buffer = []
+tpd_tuples = []
 tpds_avg = []
+tpds_max = []
+tpds_min = []
 
 # Particle class
 class Particle :
@@ -149,7 +160,6 @@ def processing_fitness(master):
     
     return -total_process_delay  , total_process_delay , total_memscore
 
-
 def generate_hierarchy(depth, width):
     level_agtrainer_list = []
     agtrainer_list = []
@@ -204,7 +214,6 @@ def generate_hierarchy(depth, width):
         current_level = next_level
 
     return root
-
 
 def printTree(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
@@ -311,7 +320,6 @@ def applyVelocity(p_position , p_velocity) :
 
     return new_position 
 
-
 def PSO_FL_SIM() :    
     global iw
 
@@ -346,12 +354,19 @@ def PSO_FL_SIM() :
             tpd_buffer.append(tp)
             particles_fitness_buffer.append(particle.fitness)
 
-        # iw = 0.9 - ((0.7 * counter) / max_iter) 
+        # iw = 0.1 - ((0.09 * counter) / max_iter) 
 
         iterations.append(counter)
         gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
         
+        tup = []
+        for i in tpd_buffer:
+            tup.append(i)
+        tpd_tuples.append(tup)
         tpds_avg.append(sum(tpd_buffer) / len(tpd_buffer))
+        tpds_max.append(max(tpd_buffer))
+        tpds_min.append(min(tpd_buffer))
+        
         particles_fitnesses_avg.append(sum(particles_fitness_buffer) / len(particles_fitness_buffer))
         
         tpd_buffer.clear()
@@ -362,7 +377,10 @@ def PSO_FL_SIM() :
         
     illustrate_plot(("iteration" , iterations) , ("best particle fitness" , gbest_particle_fitness_results) , True)
     illustrate_plot(("iteration" , iterations) , ("particles fitness" , particles_fitnesses_avg))
-    illustrate_plot(("iteration" , iterations) , ("total processing delay" , tpds_avg) , True)
+    # illustrate_plot(("iteration" , iterations) , ("average total processing delay" , tpds_avg) , True)
+    # illustrate_plot(("iteration" , iterations) , ("max total processing delay" , tpds_max) , True)
+    # illustrate_plot(("iteration" , iterations) , ("min total processing delay" , tpds_min) , True)
+    plot_tuple_curves(tpd_tuples)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
