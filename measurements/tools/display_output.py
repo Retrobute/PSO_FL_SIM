@@ -24,12 +24,13 @@ def plot_tuple_curves(data):
     Parameters:
     data (list of tuples): A list where each tuple contains floating point numbers.
     """
+
     num_tuples = len(data)
     x = np.arange(num_tuples)
     
     # Convert list of tuples to a NumPy array for easier manipulation
     data_array = np.array(data, dtype=float)
-    print(data_array.shape)
+
     # Plot all tuple elements in gray
     for i in range(data_array.shape[1]):
         plt.plot(x, data_array[:, i], color='gray', alpha=0.5)

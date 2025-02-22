@@ -14,17 +14,17 @@ import copy
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                    # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
+iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
 c1 = .01                                    # Pbest coefficient
 c2 = 2.5                                    # Gbest coefficient
-pop_n = 5                                   # Population number
+pop_n = 3                                   # Population number
 max_iter = 150                              # Maximum iteration
 conv = 0.1                                  # Convergence value
 global_best = 0.7                           # NOTE : Temporary value , change it later !!!
 
 # System parameters
 DEPTH = 2
-WIDTH = 75
+WIDTH = 61
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
@@ -34,15 +34,18 @@ tracking_mode = True
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # Graph illustration parameters 
-particles_fitness_buffer = []
-particles_fitnesses_avg = []
 gbest_particle_fitness_results = []
-iterations = []
+particles_fitnesses_buffer = []
+particles_fitnesses_tuples = []
+particles_fitnesses_avg = []
+particles_fitnesses_max = []
+particles_fitnesses_min = []
 tpd_buffer = []
 tpd_tuples = []
 tpds_avg = []
 tpds_max = []
 tpds_min = []
+iterations = []
 
 # Particle class
 class Particle :
@@ -288,14 +291,12 @@ def applyVelocity(p_position, p_velocity):
     for a, b in zip(p_position, p_velocity):
         np = (a + b) % client_count  
 
-        # Ensure unique positions
         while np in new_position:
             np = (np + 1) % client_count  
 
         new_position.append(np)
 
     return new_position
-
 
 def PSO_FL_SIM() :    
     global iw
@@ -329,31 +330,34 @@ def PSO_FL_SIM() :
                     swarm.global_best_particle = copy.deepcopy(particle)              
             
             tpd_buffer.append(tp)
-            particles_fitness_buffer.append(particle.fitness)
+            particles_fitnesses_buffer.append(particle.fitness)
 
         # iw = 0.1 - ((0.09 * counter) / max_iter) 
 
         iterations.append(counter)
         gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
         
-        tup = []
-        for i in tpd_buffer:
-            tup.append(i)
-        tpd_tuples.append(tup)
+        tpd_tup = [i for i in tpd_buffer]
+        tpd_tuples.append(tpd_tup)
         tpds_avg.append(sum(tpd_buffer) / len(tpd_buffer))
         tpds_max.append(max(tpd_buffer))
         tpds_min.append(min(tpd_buffer))
         
-        particles_fitnesses_avg.append(sum(particles_fitness_buffer) / len(particles_fitness_buffer))
+        # We could simply reverse the TPD plot and get Particles Fitnesses Plot but as the fitness function might change later this method is not reliable 
+        particles_tup = [i for i in particles_fitnesses_buffer]
+        particles_fitnesses_tuples.append(particles_tup)
+        particles_fitnesses_avg.append(sum(particles_fitnesses_buffer) / len(particles_fitnesses_buffer))
+        particles_fitnesses_max.append(max(particles_fitnesses_buffer))
+        particles_fitnesses_max.append(min(particles_fitnesses_buffer))
         
         tpd_buffer.clear()
-        particles_fitness_buffer.clear()
+        particles_fitnesses_buffer.clear()
 
-        print(counter)
+        print("Iteration : " , counter)
         counter += 1
         
     illustrate_plot(("iteration" , iterations) , ("best particle fitness" , gbest_particle_fitness_results) , True)
-    illustrate_plot(("iteration" , iterations) , ("particles fitness" , particles_fitnesses_avg))
+    plot_tuple_curves(particles_fitnesses_tuples)
     plot_tuple_curves(tpd_tuples)
 
 if __name__ == "__main__" : 
