@@ -1,8 +1,7 @@
-
 from measurements.tools.display_output import *
+from measurements.tools.store_output import *
 from random import randint , random , sample , seed 
 import copy 
-
 
 # Points:
 # 1- when we increase the population, we should also proportionally increase the c1. otherwise we will see fluctuation, plus not having particles converging to a global best.
@@ -14,17 +13,15 @@ import copy
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   
-c1 = .01                                    # Pbest coefficient
-c2 = 2.5                                    # Gbest coefficient
-pop_n = 3                                   # Population number
-max_iter = 150                              # Maximum iteration
-conv = 0.1                                  # Convergence value
-global_best = 0.7                           # NOTE : Temporary value , change it later !!!
+iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
+c2 = 1                                      # Gbest coefficient 
+pop_n = 5                                   # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 100                              # Maximum iteration
 
 # System parameters
 DEPTH = 2
-WIDTH = 61
+WIDTH = 65
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
@@ -33,19 +30,62 @@ randomness_seed = 10
 tracking_mode = True   
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
-# Graph illustration parameters 
+# Experiment parameters
+scenario_file_number = WIDTH // 5
+scenario_folder_number = DEPTH - 1                       
+scenario_folder_name = f"scenario_case_{scenario_folder_number}"
+
+# Graph illustration required parameters 
+particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_number}.png"
+swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_number}.png"
+tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_number}.png"
+
+sbpfl = ("iteration" , "best particle fitness")
+pfl = ("iteration" , "particles fitness") 
+tpdl = ("iteration" , "total processing delay")
+
+sbpft = "Swarm’s Best Particle Fitness Plot"
+pft = "Particles Fitness Plot"
+tpdt = "Total Processing Delay Plot"
+
 gbest_particle_fitness_results = []
 particles_fitnesses_buffer = []
 particles_fitnesses_tuples = []
-particles_fitnesses_avg = []
-particles_fitnesses_max = []
-particles_fitnesses_min = []
+
 tpd_buffer = []
 tpd_tuples = []
-tpds_avg = []
-tpds_max = []
-tpds_min = []
 iterations = []
+
+# CSV output required parameters
+csv_particles_output_file_name = f"particles_data_{scenario_file_number}"
+csv_swarm_best_output_file_name = f"swarm_best_data_{scenario_file_number}"
+csv_tpd_output_file_name = f"tpd_data_{scenario_file_number}"
+
+csv_particles_data_path = f"./measurements/results/{scenario_folder_name}/{csv_particles_output_file_name}.csv"
+csv_swarm_best_data_path = f"./measurements/results/{scenario_folder_name}/{csv_swarm_best_output_file_name}.csv"
+csv_tpd_data_path = f"./measurements/results/{scenario_folder_name}/{csv_tpd_output_file_name}.csv"
+
+particles_columns = ["iteration"] + [f"particle_{i+1}_fitness" for i in range(pop_n)]
+swarm_best_columns = ["iteration", "swarm_best_fitness"]
+tpd_columns = ["iteration"] + [f"tpd_particle_{i+1}" for i in range(pop_n)]
+
+csv_cols = [particles_columns, swarm_best_columns, tpd_columns]
+csv_rows = [[], [], []]
+
+# JSON output required parameters (Particles constant metadata)
+json_path = f"./measurements/results/{scenario_folder_name}/pso_scenario_case_{scenario_file_number}.json"
+json_pso_dict = {
+    "DEPTH" : DEPTH,
+    "WIDTH" : WIDTH,
+    "dimensions" : dimensions,
+    "randomness_seed" : randomness_seed,
+    "iw" : iw,
+    "c1" : c1,
+    "c2" : c2,
+    "pop_n" : pop_n,
+    "max_iter" : max_iter,
+    "velocity_factor" : velocity_factor
+} 
 
 # Particle class
 class Particle :
@@ -277,7 +317,6 @@ def updateVelocity(current_velocity, current_position, personal_best, global_bes
     cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
     social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
     
-    
     max_velocity = max(1, int(len(current_velocity) * velocity_factor))
     new_velocity = [round(inertia[i] + cognitive[i] + social[i]) for i in range(len(current_velocity))]
     new_velocity = [max(min(v, max_velocity), -max_velocity) for v in new_velocity]  # Apply velocity limits
@@ -311,8 +350,9 @@ def PSO_FL_SIM() :
     swarm = Swarm(pop_n , dimensions , root)
 
     while counter <= max_iter: 
-        for particle in swarm.particles:
-            
+        for particle in swarm.particles :
+            particles_fitnesses_buffer.append(particle.fitness)
+
             new_velocity = updateVelocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
             new_position = applyVelocity(particle.pos, new_velocity)
             root = reArrangeHierarchy(new_position)
@@ -330,35 +370,40 @@ def PSO_FL_SIM() :
                     swarm.global_best_particle = copy.deepcopy(particle)              
             
             tpd_buffer.append(tp)
-            particles_fitnesses_buffer.append(particle.fitness)
 
         # iw = 0.1 - ((0.09 * counter) / max_iter) 
 
         iterations.append(counter)
+        
         gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
+        tpd_tuples.append(tpd_buffer.copy())
+        particles_fitnesses_tuples.append(particles_fitnesses_buffer.copy()) # We could simply reverse the TPD plot and get Particles Fitnesses Plot but as the fitness function might change later this method is not reliable 
         
-        tpd_tup = [i for i in tpd_buffer]
-        tpd_tuples.append(tpd_tup)
-        tpds_avg.append(sum(tpd_buffer) / len(tpd_buffer))
-        tpds_max.append(max(tpd_buffer))
-        tpds_min.append(min(tpd_buffer))
+        particles_row = [counter] + [round(fitness , 2) for fitness in particles_fitnesses_buffer]
+        csv_rows[0].append(particles_row)
         
-        # We could simply reverse the TPD plot and get Particles Fitnesses Plot but as the fitness function might change later this method is not reliable 
-        particles_tup = [i for i in particles_fitnesses_buffer]
-        particles_fitnesses_tuples.append(particles_tup)
-        particles_fitnesses_avg.append(sum(particles_fitnesses_buffer) / len(particles_fitnesses_buffer))
-        particles_fitnesses_max.append(max(particles_fitnesses_buffer))
-        particles_fitnesses_max.append(min(particles_fitnesses_buffer))
+        swarm_best_row = [counter, round(swarm.global_best_particle.fitness , 2)]
+        csv_rows[1].append(swarm_best_row)
+        
+        tpd_row = [counter] + [round(tpd , 2) for tpd in tpd_buffer]
+        csv_rows[2].append(tpd_row)
+
+        print("Iteration : " , counter)
         
         tpd_buffer.clear()
         particles_fitnesses_buffer.clear()
-
-        print("Iteration : " , counter)
+        
         counter += 1
         
-    illustrate_plot(("iteration" , iterations) , ("best particle fitness" , gbest_particle_fitness_results) , True)
-    plot_tuple_curves(particles_fitnesses_tuples)
-    plot_tuple_curves(tpd_tuples)
+    illustrate_plot(gbest_particle_fitness_results , sbpfl , sbpft , swarm_best_fitness_fig_path)
+    plot_tuple_curves(particles_fitnesses_tuples , pfl , pft , particles_fitness_fig_path)
+    plot_tuple_curves(tpd_tuples , tpdl , tpdt , tpd_fig_path)
+    
+    save_data_to_csv(csv_cols[0] , csv_rows[0] , csv_particles_data_path)
+    save_data_to_csv(csv_cols[1] , csv_rows[1] , csv_swarm_best_data_path)
+    save_data_to_csv(csv_cols[2] , csv_rows[2] , csv_tpd_data_path)
+
+    save_metadata_to_json(json_pso_dict , json_path)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()

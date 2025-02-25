@@ -1,23 +1,22 @@
 import matplotlib.pyplot as plt
-from os import path
 import numpy as np
-def output_to_txt(txt_info , file_path) : 
-    with open(file_path , "w") as file : 
-        for info in txt_info :
-            file.write(f"Iter : {info[0]} , Fitness : {info[1]:.4f} , \tTotal Processing Delay : {info[2]:.4f} , \tTotal Memory Score : {info[3]:.4f}\n")
 
-def illustrate_plot(x , y , scatter_plot=False) : 
-    plt.plot(x[1] , y[1] , color="blue" , zorder=1) 
+def illustrate_plot(data , label , title , path , scatter_plot=False) : 
+    x = np.arange(1, len(data) + 1)  
 
+    plt.plot(x , data , color="blue" , zorder=1) 
+    
     if scatter_plot : 
-        plt.scatter(x[1] , y[1] , color="red" , zorder=2)
+        plt.scatter(x , data , color="red" , zorder=2)
 
-    plt.xlabel(x[0])
-    plt.ylabel(y[0])
+    plt.xlabel(label[0])
+    plt.ylabel(label[1])
+    plt.title(title)
+    plt.savefig(path)
     plt.show()
 
 
-def plot_tuple_curves(data):
+def plot_tuple_curves(data , label , title , path):
     """
     Plots each tuple's elements in gray and overlays min, max, and average values.
     
@@ -43,10 +42,11 @@ def plot_tuple_curves(data):
     # Overlay min, max, and average with distinct colors
     plt.plot(x, min_vals, color='green', label='Min')
     plt.plot(x, max_vals, color='red', label='Max')
-    plt.plot(x, avg_vals, color='orange', label='Avg')
+    plt.plot(x, avg_vals, color='orange', label='Mean')
     
-    plt.xlabel('Tuple Index')
-    plt.ylabel('Values')
-    plt.title('Tuple Elements with Min, Max, and Avg')
+    plt.xlabel(label[0])
+    plt.ylabel(label[1])
+    plt.title(title)
     plt.legend()
+    plt.savefig(path)
     plt.show()
