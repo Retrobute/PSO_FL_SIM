@@ -1,6 +1,7 @@
 from measurements.tools.display_output import *
 from measurements.tools.store_output import *
 from random import randint , random , sample , seed 
+from os import system
 import copy 
 
 # Points:
@@ -13,15 +14,15 @@ import copy
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
-c2 = 1                                      # Gbest coefficient 
-pop_n = 5                                   # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 100                              # Maximum iteration
+iw = .01                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .01                                     # Pbest coefficient (0.01 , 0.1)
+c2 = 1                                       # Gbest coefficient 
+pop_n = 3                                    # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 100                               # Maximum iteration
 
 # System parameters
-DEPTH = 2
-WIDTH = 65
+DEPTH = 6
+WIDTH = 3
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
@@ -31,7 +32,8 @@ tracking_mode = True
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # Experiment parameters
-scenario_file_number = WIDTH // 5
+stepper = 1
+scenario_file_number = WIDTH // stepper
 scenario_folder_number = DEPTH - 1                       
 scenario_folder_name = f"scenario_case_{scenario_folder_number}"
 
@@ -325,7 +327,7 @@ def updateVelocity(current_velocity, current_position, personal_best, global_bes
 
 def applyVelocity(p_position, p_velocity):
     new_position = []
-    client_count = len(Client_list)
+    client_count = len(p_position)
 
     for a, b in zip(p_position, p_velocity):
         np = (a + b) % client_count  
@@ -371,7 +373,7 @@ def PSO_FL_SIM() :
             
             tpd_buffer.append(tp)
 
-        # iw = 0.1 - ((0.09 * counter) / max_iter) 
+        # iw = 0.15 - ((0.14 * counter) / max_iter) 
 
         iterations.append(counter)
         
@@ -388,22 +390,25 @@ def PSO_FL_SIM() :
         tpd_row = [counter] + [round(tpd , 2) for tpd in tpd_buffer]
         csv_rows[2].append(tpd_row)
 
+
+        system("clear")
+        print(len(Client_list))
         print("Iteration : " , counter)
         
         tpd_buffer.clear()
         particles_fitnesses_buffer.clear()
         
         counter += 1
-        
+
+    save_data_to_csv(csv_cols[0] , csv_rows[0] , csv_particles_data_path)
+    save_data_to_csv(csv_cols[1] , csv_rows[1] , csv_swarm_best_data_path)
+    save_data_to_csv(csv_cols[2] , csv_rows[2] , csv_tpd_data_path)
+    save_metadata_to_json(json_pso_dict , json_path)
+
     illustrate_plot(gbest_particle_fitness_results , sbpfl , sbpft , swarm_best_fitness_fig_path)
     plot_tuple_curves(particles_fitnesses_tuples , pfl , pft , particles_fitness_fig_path)
     plot_tuple_curves(tpd_tuples , tpdl , tpdt , tpd_fig_path)
     
-    save_data_to_csv(csv_cols[0] , csv_rows[0] , csv_particles_data_path)
-    save_data_to_csv(csv_cols[1] , csv_rows[1] , csv_swarm_best_data_path)
-    save_data_to_csv(csv_cols[2] , csv_rows[2] , csv_tpd_data_path)
-
-    save_metadata_to_json(json_pso_dict , json_path)
 
 if __name__ == "__main__" : 
     PSO_FL_SIM()
