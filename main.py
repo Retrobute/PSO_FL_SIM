@@ -14,15 +14,15 @@ import copy
 
 # Global parameters
 # PSO parameters                            
-iw = .01                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .01                                     # Pbest coefficient (0.01 , 0.1)
+iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1                                       # Gbest coefficient 
-pop_n = 3                                    # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 100                               # Maximum iteration
+pop_n = 10                                    # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 50                               # Maximum iteration
 
 # System parameters
-DEPTH = 6
-WIDTH = 3
+DEPTH = 4
+WIDTH = 4
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
@@ -34,13 +34,13 @@ velocity_factor = 0.1                       # Increasing velocity_factor causes 
 # Experiment parameters
 stepper = 1
 scenario_file_number = WIDTH // stepper
-scenario_folder_number = DEPTH - 1                       
+scenario_folder_number = DEPTH                       
 scenario_folder_name = f"scenario_case_{scenario_folder_number}"
 
 # Graph illustration required parameters 
-particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_number}.png"
-swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_number}.png"
-tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_number}.png"
+particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_number}.pdf"
+swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_number}.pdf"
+tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_number}.pdf"
 
 sbpfl = ("iteration" , "best particle fitness")
 pfl = ("iteration" , "particles fitness") 
@@ -210,7 +210,7 @@ def generate_hierarchy(depth, width):
     trainer_list = []
 
     def create_agtrainer(label_prefix, level):
-        pspeed = randint(5, 15)
+        pspeed = randint(2, 8)
         memcap = randint(10, 50)
         mdatasize = 5                         # in the beginning it's a fixed value but in the future as a stretch goal we can have variable MDataSize due to quantization and knowledge distillation techniques
         length = len(Client_list) 
@@ -221,7 +221,7 @@ def generate_hierarchy(depth, width):
         return new_client
 
     def create_trainer(label_prefix):
-        pspeed = randint(5, 15)
+        pspeed = randint(2, 8)
         memcap = randint(10, 50)
         mdatasize = 5 
         length = len(Client_list)
@@ -346,6 +346,8 @@ def PSO_FL_SIM() :
         seed(randomness_seed)
 
     root = generate_hierarchy(DEPTH , WIDTH)
+    _ , tpd , _ = processing_fitness(root)
+    tpd_tuples.append([tpd] * pop_n)
 
     counter = 1
 
