@@ -1,0 +1,12 @@
+{
+    "DEPTH": 4,
+    "WIDTH": 5,
+    "dimensions": 156,
+    "randomness_seed": 11,
+    "iw": 0.01,
+    "c1": 0.01,
+    "c2": 1.0,
+    "pop_n": 5,
+    "max_iter": 100,
+    "velocity_factor": 0.1
+}

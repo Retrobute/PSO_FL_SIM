@@ -14,20 +14,20 @@ import copy
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
-c2 = 1                                       # Gbest coefficient 
-pop_n = 10                                    # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 50                               # Maximum iteration
+iw = .01                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .01                                     # Pbest coefficient (0.01 , 0.1)
+c2 = 1.                                       # Gbest coefficient 
+pop_n = 5                                   # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 100                               # Maximum iteration
 
 # System parameters
-DEPTH = 4
-WIDTH = 4
+DEPTH = 3
+WIDTH = 5
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
-randomness_seed = 10
+randomness_seed = 11
 tracking_mode = True   
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
