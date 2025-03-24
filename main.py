@@ -337,7 +337,6 @@ def pso_fl_sim() :
     counter = 1
 
     swarm = Swarm(pop_n , dimensions , root)
-    gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
 
     while counter <= max_iter: 
         for particle in swarm.particles :
