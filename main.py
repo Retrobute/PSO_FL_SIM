@@ -1,24 +1,26 @@
 from measurements.tools.display_output import *
 from measurements.tools.store_output import *
 from random import randint , random , sample , seed 
-from os import system
+from datetime import datetime as d
+import os
 import copy 
-
-# Points:
-# 1- when we increase the population, we should also proportionally increase the c1. otherwise we will see fluctuation, plus not having particles converging to a global best.
-# For instnace, if I choose pop_n = 3, then I will go wiht c1 = 0.01. If I choose c1 = 0.1 then it will show fluctuation and sometimes no convergence in the maximum total processing delay plot (check it with seed = 3).
-# But when I increase the pop_n, for instance to 10, then if I keep c1 to 0.01, I would still see convergence, but if I slightly increase c1 to higher value, such as 0.1, then I will not only see convergence, but also a lower final value for the total processing delay to converge to.
-# And if I increase c1 to for instance 0.2, then I will see again that there is more fluctuation, and no convergence.
-# 2- iw in our case needs to be kept at lower value. I tried with an adaptive iw which would decrease over time, but it is sometime effective, someitmes not. I would not keep the adaptive mode on. so far, I tried 0.1, 0.01, and 0.001.
-# 3- Trying with lower particle numbers in our case seems reasonable and so far promissing. It processes faster, and converges faster. But noting that once we go low on the population number, such as pop_n = 3, then we have to keep c1 to 0.01
+import sys
 
 # Global parameters
 # PSO parameters                            
+<<<<<<< HEAD
 iw = .01                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
 c1 = .01                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1.                                       # Gbest coefficient 
 pop_n = 5                                   # Population number (3 , 5 , 10 , 15 , 20*)
 max_iter = 100                               # Maximum iteration
+=======
+iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
+c2 = 1                                      # Gbest coefficient 
+pop_n = 10                                  # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 50                               # Maximum iteration
+>>>>>>> 76359f6 (cleanup: memscore removed , camel case function names are shown with a snake case format)
 
 # System parameters
 DEPTH = 3
@@ -32,15 +34,15 @@ tracking_mode = True
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # Experiment parameters
-stepper = 1
-scenario_file_number = WIDTH // stepper
+stepper = 1                                 # Stepper specifies that the index number of scenario files per N
+scenario_file_name = f"width_{WIDTH}_{d.now().strftime("%Y-%m-%d_%H:%M:%S")}" 
 scenario_folder_number = DEPTH                       
-scenario_folder_name = f"scenario_case_{scenario_folder_number}"
+scenario_folder_name = f"depth_{scenario_folder_number}_scenarios"
 
 # Graph illustration required parameters 
-particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_number}.pdf"
-swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_number}.pdf"
-tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_number}.pdf"
+particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_name}.pdf"
+swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_name}.pdf"
+tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_name}.pdf"
 
 sbpfl = ("iteration" , "best particle fitness")
 pfl = ("iteration" , "particles fitness") 
@@ -59,9 +61,9 @@ tpd_tuples = []
 iterations = []
 
 # CSV output required parameters
-csv_particles_output_file_name = f"particles_data_{scenario_file_number}"
-csv_swarm_best_output_file_name = f"swarm_best_data_{scenario_file_number}"
-csv_tpd_output_file_name = f"tpd_data_{scenario_file_number}"
+csv_particles_output_file_name = f"particles_data_{scenario_file_name}"
+csv_swarm_best_output_file_name = f"swarm_best_data_{scenario_file_name}"
+csv_tpd_output_file_name = f"tpd_data_{scenario_file_name}"
 
 csv_particles_data_path = f"./measurements/results/{scenario_folder_name}/{csv_particles_output_file_name}.csv"
 csv_swarm_best_data_path = f"./measurements/results/{scenario_folder_name}/{csv_swarm_best_output_file_name}.csv"
@@ -75,7 +77,7 @@ csv_cols = [particles_columns, swarm_best_columns, tpd_columns]
 csv_rows = [[], [], []]
 
 # JSON output required parameters (Particles constant metadata)
-json_path = f"./measurements/results/{scenario_folder_name}/pso_scenario_case_{scenario_file_number}.json"
+json_path = f"./measurements/results/{scenario_folder_name}/pso_scenario_case_{scenario_file_name}.json"
 json_pso_dict = {
     "DEPTH" : DEPTH,
     "WIDTH" : WIDTH,
@@ -112,12 +114,12 @@ class Swarm :
         for i in range(pop_n):
             if i != 0 : 
                 particle_pos = sample(range(cll), dimensions)
-                root = reArrangeHierarchy(particle_pos)  
+                root = rearrange_hierarchy(particle_pos)  
 
             else : 
                 particle_pos = init_particle_pos
 
-            fitness, _ , _ = processing_fitness(root)
+            fitness, _ = processing_fitness(root)
             velocity = [0 for _ in range(dimensions)]       
             best_pos_fitness = fitness                   
             particles.append(Particle(particle_pos, fitness, velocity, best_pos_fitness))
@@ -133,26 +135,23 @@ class Client :
         self.is_aggregator = is_aggregator
         self.client_id = client_id  
         self.processing_buffer = []
-        self.memscore = 0
 
-    def changeRole(self , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
+    def change_role(self , new_pos) :         # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
         if not self.is_aggregator : 
             Role_buffer.append(self.label) 
         self.processing_buffer = []
         self.label = list(Role_dictionary.keys())[new_pos]
         self.is_aggregator = True
     
-    def takeAwayRole(self) :                 # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
+    def take_away_role(self) :                 # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
         self.label = None
         self.processing_buffer = []  
-
 
 # Fitness function
 def processing_fitness(master):
     bft_queue = [master]                     # Start with the root node
     levels = []                              # List to store nodes level by level
     total_process_delay = 0
-    total_memscore = 0 
 
     # Perform BFT to group nodes by levels
     while bft_queue:
@@ -181,28 +180,16 @@ def processing_fitness(master):
                 cluster_head_memcons = node.mdatasize + sum(
                     child.mdatasize for child in node.processing_buffer
                 )
-                
-                node.memscore = node.memcap - cluster_head_memcons
-                total_memscore += node.memscore
+        
                 cluster_delay = cluster_head_memcons / node.pspeed
                 cluster_delays.append(cluster_delay)
-
-                # Print details for the cluster
-                # print(f"AgTrainer: {node.label}, MDataSize: {node.mdatasize} Memory Consumption : {cluster_head_memcons}, Cluster Head Delay: {cluster_delay:.2f}")
-                
-                # for child in node.processing_buffer:
-                    # print(f"Trainer: {child.label}, MDataSize: {child.mdatasize}")
 
         # Find the maximum cluster delay for the level
         if cluster_delays:
             max_cluster_delay = max(cluster_delays)
             total_process_delay += max_cluster_delay  # Add max delay of the level to the total delay
-            # print(f"Level Max Cluster Delay: {max_cluster_delay:.2f}\n")
-
-    # print(f"Total Processing Delay: {total_process_delay:.2f}")
-    # print(f"Total Memory Score: {total_memscore}")
     
-    return -total_process_delay  , total_process_delay , total_memscore
+    return -total_process_delay , total_process_delay
 
 def generate_hierarchy(depth, width):
     level_agtrainer_list = []
@@ -259,41 +246,39 @@ def generate_hierarchy(depth, width):
 
     return root
 
-def printTree(node, level=0, is_last=True, prefix=""):
+def print_hierarchy(node, level=0, is_last=True, prefix=""):
     connector = "└── " if is_last else "├── "
     if node.is_aggregator : 
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id}, MemScore: {node.memscore})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize} Pspeed: {node.pspeed}, ID: {node.client_id})")
 
     elif node.is_aggregator == False :
-        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id}, MemScore: {node.memscore})")
+        print(f"{prefix}{connector}{node.label} (MemCap: {node.memcap}, MDataSize: {node.mdatasize}, ID: {node.client_id})")
 
     if node.is_aggregator :
         for i, child in enumerate(node.processing_buffer):
             new_prefix = prefix + ("    " if is_last else "│   ")
-            printTree(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
+            print_hierarchy(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
 
-def changeRole(client , new_pos) :                # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
+def change_role(client , new_pos) :                 # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
     if not client.is_aggregator : 
         Role_buffer.append(client.label) 
     client.processing_buffer = []
     client.label = list(Role_dictionary.keys())[new_pos]
     client.is_aggregator = True
     
-def takeAwayRole(client) :                        # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
+def take_away_role(client) :                        # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
     client.label = None
     client.processing_buffer = []   
 
-def reArrangeHierarchy(pso_particle) :            # This function has the iterative approach to perform change role and take away role
+def rearrange_hierarchy(pso_particle) :            # This function has the iterative approach to perform change role and take away role
     for new_pos , clid in enumerate(pso_particle) : 
         for client in Client_list : 
             if client.label == list(Role_dictionary.keys())[new_pos] :
-                client.takeAwayRole()
+                client.take_away_role()
 
             if client.client_id == clid : 
-                client.changeRole(new_pos)
+                client.change_role(new_pos)
                 
-            client.memscore = 0
-            
     for client in Client_list : 
         if client.label == None :
             client.label = Role_buffer.pop()    
@@ -304,14 +289,14 @@ def reArrangeHierarchy(pso_particle) :            # This function has the iterat
                 temp = Role_dictionary[client.label]
                 for role in temp : 
                     for c in Client_list :
-                        if  c.label == role : 
+                        if c.label == role : 
                             client.processing_buffer.append(c) 
                         
     for client in Client_list :
         if client.label == list(Role_dictionary.keys())[0] :
             return client
 
-def updateVelocity(current_velocity, current_position, personal_best, global_best, iw, c1, c2):
+def update_velocity(current_velocity, current_position, personal_best, global_best, iw, c1, c2):
     r1 = [random() for _ in range(len(current_velocity))]
     r2 = [random() for _ in range(len(current_velocity))]
 
@@ -325,7 +310,7 @@ def updateVelocity(current_velocity, current_position, personal_best, global_bes
 
     return new_velocity
 
-def applyVelocity(p_position, p_velocity):
+def apply_velocity(p_position, p_velocity):
     new_position = []
     client_count = len(p_position)
 
@@ -339,29 +324,30 @@ def applyVelocity(p_position, p_velocity):
 
     return new_position
 
-def PSO_FL_SIM() :    
+def pso_fl_sim() :    
     global iw
 
     if tracking_mode : 
         seed(randomness_seed)
 
     root = generate_hierarchy(DEPTH , WIDTH)
-    _ , tpd , _ = processing_fitness(root)
-    tpd_tuples.append([tpd] * pop_n)
-
+    initial_root = copy.deepcopy(root)
+    _ , initial_tpd = processing_fitness(root)
+    
     counter = 1
 
     swarm = Swarm(pop_n , dimensions , root)
+    gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
 
     while counter <= max_iter: 
         for particle in swarm.particles :
             particles_fitnesses_buffer.append(particle.fitness)
+            
+            new_velocity = update_velocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
+            new_position = apply_velocity(particle.pos, new_velocity)
+            root = rearrange_hierarchy(new_position)
 
-            new_velocity = updateVelocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
-            new_position = applyVelocity(particle.pos, new_velocity)
-            root = reArrangeHierarchy(new_position)
-
-            new_pos_fitness, tp, ـ = processing_fitness(root)
+            new_pos_fitness, tpd = processing_fitness(root)
             particle.pos = new_position
             particle.fitness = new_pos_fitness
             particle.velocity = new_velocity
@@ -370,12 +356,10 @@ def PSO_FL_SIM() :
                 particle.best_pos = particle.pos.copy()
                 particle.best_pos_fitness = copy.copy(particle.fitness)
 
-                if particle.fitness > swarm.global_best_particle.fitness:
-                    swarm.global_best_particle = copy.deepcopy(particle)              
+            if particle.fitness > swarm.global_best_particle.fitness:
+                swarm.global_best_particle = copy.deepcopy(particle)              
             
-            tpd_buffer.append(tp)
-
-        # iw = 0.15 - ((0.14 * counter) / max_iter) 
+            tpd_buffer.append(tpd)
 
         iterations.append(counter)
         
@@ -392,15 +376,18 @@ def PSO_FL_SIM() :
         tpd_row = [counter] + [round(tpd , 2) for tpd in tpd_buffer]
         csv_rows[2].append(tpd_row)
 
-
-        system("clear")
-        print(len(Client_list))
-        print("Iteration : " , counter)
+        os.system("cls") if sys.platform == "win32" else os.system("clear")
+        print(f"Iteration : {counter}") 
         
         tpd_buffer.clear()
         particles_fitnesses_buffer.clear()
         
         counter += 1
+
+    print_hierarchy(initial_root)
+    print("Dimensions : " , dimensions)
+    print(f"Initial TPD Before PSO : {initial_tpd}")
+    print(f"Final Best TPD After PSO : {-swarm.global_best_particle.fitness}\n")
 
     save_data_to_csv(csv_cols[0] , csv_rows[0] , csv_particles_data_path)
     save_data_to_csv(csv_cols[1] , csv_rows[1] , csv_swarm_best_data_path)
@@ -413,4 +400,4 @@ def PSO_FL_SIM() :
     
 
 if __name__ == "__main__" : 
-    PSO_FL_SIM()
+    pso_fl_sim()
