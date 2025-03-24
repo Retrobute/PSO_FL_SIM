@@ -8,23 +8,15 @@ import sys
 
 # Global parameters
 # PSO parameters                            
-<<<<<<< HEAD
-iw = .01                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .01                                     # Pbest coefficient (0.01 , 0.1)
-c2 = 1.                                       # Gbest coefficient 
-pop_n = 5                                   # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 100                               # Maximum iteration
-=======
 iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
 c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1                                      # Gbest coefficient 
 pop_n = 10                                  # Population number (3 , 5 , 10 , 15 , 20*)
 max_iter = 50                               # Maximum iteration
->>>>>>> 76359f6 (cleanup: memscore removed , camel case function names are shown with a snake case format)
 
 # System parameters
-DEPTH = 3
-WIDTH = 5
+DEPTH = 4
+WIDTH = 4
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
