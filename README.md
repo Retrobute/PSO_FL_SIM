@@ -70,7 +70,7 @@ Since our problem is a maximization problem, the objective is to maximize the va
    - Compute the new fitness of the Particle and the total processing delay (tpd).
    - If the new fitness is better than the particle's best position fitness, update its best position and best position's fitness.
    - If the new fitness is better than the global best particle's fitness, update the global best particle.
-4. Repeat case 3's steps until reaches the maximum iteration number
+4. Repeat case 3's steps until reaches the maximum iteration number.
 
 ## Screenshots 📸
 **Note :** The TPD plots shown below do not include the initial total processing delay of the hierarchy before the swarm is created. We excluded it from the plots to focus on observing the progress of solution refinement.
