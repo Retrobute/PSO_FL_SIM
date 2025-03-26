@@ -14,7 +14,7 @@ PSO_FL_SIM is a Black Box PSO simulator designed to reduce the computational cos
 ## Description 📖
 A major challenge with Federated Learning (FL) is its high computational cost, which can slow down the training process. To address this, we're focusing on optimizing the structure of the FL system without compromising privacy. The goal is to figure out the most efficient client configuration, reducing delays while keeping the data private. This simulation looks at ways to improve FL performance by tweaking the system's architecture and workflow.
 
-## System Model 🏗️
+## System Simulation Model 🏗️
 Our system uses a hierarchical structure of clients, with each client being either an Aggregator Trainer (AgTrainer) or a Trainer. Here’s a breakdown of how it works:
 
 ### Hierarchy Structure
