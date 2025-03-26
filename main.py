@@ -249,18 +249,7 @@ def print_hierarchy(node, level=0, is_last=True, prefix=""):
     if node.is_aggregator :
         for i, child in enumerate(node.processing_buffer):
             new_prefix = prefix + ("    " if is_last else "│   ")
-            print_hierarchy(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix)
-
-def change_role(client , new_pos) :                 # This function traverses the Client_list to find the client with equal client_id then it first buffers the role of the client if the role is trainer, and then associates the new_role_label to the selected client 
-    if not client.is_aggregator : 
-        Role_buffer.append(client.label) 
-    client.processing_buffer = []
-    client.label = list(Role_dictionary.keys())[new_pos]
-    client.is_aggregator = True
-    
-def take_away_role(client) :                        # This function traverses the Client_list and checks for the client that has the selected role in the arguments then it nulls the label and the processing_buffer   
-    client.label = None
-    client.processing_buffer = []   
+            print_hierarchy(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix) 
 
 def rearrange_hierarchy(pso_particle) :            # This function has the iterative approach to perform change role and take away role
     for new_pos , clid in enumerate(pso_particle) : 
