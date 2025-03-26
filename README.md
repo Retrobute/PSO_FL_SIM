@@ -18,10 +18,10 @@ A major challenge with Federated Learning (FL) is its high computational cost, w
 Our system uses a hierarchical structure of clients, with each client being either an Aggregator Trainer (AgTrainer) or a Trainer. Here’s a breakdown of how it works:
 
 ### Hierarchy Structure
-- **DEPTH**: How many levels the hierarchy has.
-- **WIDTH**: The number of clients at each level.
-- **AgTrainers**: These are middle-level nodes in the hierarchy, managing child nodes.
-- **Trainers**: These clients are at the last level and don’t have child nodes by default. However, they can be reassigned to AgTrainers later, allowing them to manage a non-empty processing buffer.
+- **DEPTH :** How many levels the hierarchy has.
+- **WIDTH :** The number of clients at each level.
+- **AgTrainers :** These are middle-level nodes in the hierarchy, managing child nodes.
+- **Trainers :** These clients are at the last level and don’t have child nodes by default. However, they can be reassigned to AgTrainers later, allowing them to manage a non-empty processing buffer.
 
 ### Client Class
 Clients are defined by the following resources/features:
@@ -36,24 +36,24 @@ Each client keeps a processing buffer for child nodes. Trainers don’t have chi
 The way Particle Swarm Optimization (PSO) works allows us to have multiple possible solutions that evolve over time, improving until we reach an optimal solution.
 
 Here are the key parts of our PSO model:
-- **Inertia Weight (iw)**: Helps balance exploration (searching for new solutions) vs. exploitation (focusing on known good solutions).
-- **c₁ (Pbest Coefficient)**: Controls how much a particle focuses on its best solution.
-- **c₂ (Gbest Coefficient)**: Controls how much a particle focuses on the best solution found by the entire swarm.
-- **pop_n (Swarm Population Size)**: The number of particles in the swarm.
-- **velocity_factor**: A factor that limits how fast a particle can move, preventing it from making excessive jumps in the search space.
+- **iw (Inertia Weight) :** Helps balance exploration (searching for new solutions) vs. exploitation (focusing on known good solutions).
+- **c₁ (Pbest Coefficient) :** Controls how much a particle focuses on its best solution.
+- **c₂ (Gbest Coefficient) :** Controls how much a particle focuses on the best solution found by the entire swarm.
+- **pop_n (Swarm Population Size) :** The number of particles in the swarm.
+- **velocity_factor :** A factor that limits how fast a particle can move, preventing it from making excessive jumps in the search space.
 
 ### Particle Class
 The `Particle` class is where we define an individual solution in PSO. Each particle has:
-- **position**: A vector of Client IDs that represents the current solution by encoding how the clients are assigned.
-- **fitness**: A float value that tells us how good the current solution is. Since we’re solving a maximization problem, a higher fitness value means a better solution.
-- **velocity**: A vector that tells us how much the position should change.
-- **best_position**: The best solution the particle has found so far.
-- **best_fitness**: The fitness value of the `best_position`, showing the quality of the best solution found by the particle.
+- **position :** A vector of Client IDs that represents the current solution by encoding how the clients are assigned.
+- **fitness :** A float value that tells us how good the current solution is. Since we’re solving a maximization problem, a higher fitness value means a better solution.
+- **velocity :** A vector that tells us how much the position should change.
+- **best_position :** The best solution the particle has found so far.
+- **best_position_fitness :** The fitness value of the `best_position`, showing the quality of the best solution found by the particle.
 
 ### Swarm Class
 The `Swarm` class represents a group of particles with the following attributes:
-- **particles**: The collection of particles (solutions) in the swarm.
-- **global_best_particle**: The best particle among all particles in the swarm.
+- **particles :** The collection of particles (solutions) in the swarm.
+- **global_best_particle :** The best particle among all particles in the swarm.
 
 In Black Box PSO, each particle represents a vector of AgTrainer client IDs, defining their placement order in the hierarchy. This setup enables efficient optimization and a flexible system design, ultimately reducing training and processing time delays.
 
