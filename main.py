@@ -26,7 +26,6 @@ tracking_mode = True
 velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # Experiment parameters
-stepper = 1                                 # Stepper specifies that the index number of scenario files per N
 scenario_file_name = f"width_{WIDTH}_{d.now().strftime("%Y-%m-%d_%H:%M:%S")}" 
 scenario_folder_number = DEPTH                       
 scenario_folder_name = f"depth_{scenario_folder_number}_scenarios"
