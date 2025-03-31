@@ -12,11 +12,11 @@ iw = .1                                     # Inertia Weight (Higher => Explorat
 c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1                                      # Gbest coefficient 
 pop_n = 10                                  # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 50                               # Maximum iteration
+max_iter = 100                              # Maximum iteration
 
 # System parameters
-DEPTH = 4
-WIDTH = 4
+DEPTH = 3
+WIDTH = 5
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
@@ -31,9 +31,9 @@ scenario_folder_number = DEPTH
 scenario_folder_name = f"depth_{scenario_folder_number}_scenarios"
 
 # Graph illustration required parameters 
-particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_name}.pdf"
-swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_name}.pdf"
-tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_name}.pdf"
+particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_name}.png"
+swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_name}.png"
+tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_name}.png"
 
 sbpfl = ("iteration" , "best particle fitness")
 pfl = ("iteration" , "particles fitness") 
@@ -98,20 +98,14 @@ class Swarm :
         self.global_best_particle = copy.deepcopy(max(self.particles, key=lambda particle: particle.fitness))
 
     def __generate_random_particles(self, pop_n, dimensions , root):
-        init_particle_pos = [client.client_id for client in Client_list if client.is_aggregator]
-        cll = len(Client_list)
+        cll = range(len(Client_list))
         particles = []
 
-        for i in range(pop_n):
-            if i != 0 : 
-                particle_pos = sample(range(cll), dimensions)
-                root = rearrange_hierarchy(particle_pos)  
-
-            else : 
-                particle_pos = init_particle_pos
-
+        for _ in range(pop_n):
+            particle_pos = sample(cll, dimensions)
+            root = rearrange_hierarchy(particle_pos)  
             fitness, _ = processing_fitness(root)
-            velocity = [0 for _ in range(dimensions)]       
+            velocity = [0] * dimensions 
             best_pos_fitness = fitness                   
             particles.append(Particle(particle_pos, fitness, velocity, best_pos_fitness))
 
@@ -249,6 +243,7 @@ def print_hierarchy(node, level=0, is_last=True, prefix=""):
         for i, child in enumerate(node.processing_buffer):
             new_prefix = prefix + ("    " if is_last else "│   ")
             print_hierarchy(child, level + 1, i == len(node.processing_buffer) - 1, new_prefix) 
+
 
 def rearrange_hierarchy(pso_particle) :            # This function has the iterative approach to perform change role and take away role
     for new_pos , clid in enumerate(pso_particle) : 

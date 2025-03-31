@@ -31,8 +31,8 @@ def plot_tuple_curves(data , label , title , path):
     data_array = np.array(data, dtype=float)
 
     # Plot all tuple elements in gray
-    for i in range(data_array.shape[1]):
-        plt.plot(x, data_array[:, i], color='gray', alpha=0.5)
+    # for i in range(data_array.shape[1]):
+    #     plt.plot(x, data_array[:, i], color='gray', alpha=0.5)
     
     # Compute min, max, and mean for each tuple
     min_vals = np.min(data_array, axis=1)
