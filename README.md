@@ -58,7 +58,7 @@ The `Swarm` class represents a group of particles with the following attributes:
 In Black Box PSO, each particle represents a vector of AgTrainer client IDs, defining their placement order in the hierarchy. This setup enables efficient optimization and a flexible system design, ultimately reducing training and processing time delays.
 
 ### Fitness function 
-Since our problem is a maximization problem, the objective is to maximize the value of -1 × total_processing_delay.
+Since our problem is a minimization problem, the objective is to maximize the value of -1 × total_processing_delay.
 
 ## Simulation Process 💻
 1. Generate the hierarchy of clients.
