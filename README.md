@@ -74,8 +74,10 @@ Since our problem is a minimization problem, the objective is to maximize the va
 
 ## Screenshots 📸
 **Note 1 :** The TPD plots shown below do not include the initial total processing delay of the hierarchy before the swarm is created. We excluded it from the plots to focus on observing the progress of solution refinement.
+
 **Note 2 :** Decreasing TPD is not the sole objective of this algorithm. It also offers several core features, including preserving client privacy (eliminating the need for clients to share their resource information), adaptability to various circumstances, optimization, and more.
 
+### Scenario 1)
 <p align="left">
   <img height=60% width=60% src="https://github.com/user-attachments/assets/29c1b8c4-7fda-47c1-a4e4-351ca397ae14"/>
   <img height=60% width=60% src="https://github.com/user-attachments/assets/72e9d465-8b77-434f-9d33-b47da4cbc000"/>
@@ -97,7 +99,7 @@ Since our problem is a minimization problem, the objective is to maximize the va
 - Initial Hierarchy TPD Before PSO : **33.33**
 - Final Best Hierarchy TPD After PSO : **22.91**
 
-<br>
+### Scenario 2)
 <p>
   <img height=60% width=60% src="https://github.com/user-attachments/assets/ae9d14bd-6458-48fe-9a44-68036eb17f13"/>
   <img height=60% width=60% src="https://github.com/user-attachments/assets/07e44ec3-bd93-4948-b12b-2d9c39ec57f6"/>
@@ -119,7 +121,7 @@ Since our problem is a minimization problem, the objective is to maximize the va
 - Initial Hierarchy TPD Before PSO : **23.5**
 - Final Best Hierarchy TPD After PSO : **16.78**
 
-<br>
+### Scenario 3)
 <p>
   <img height=60% width=60% src="https://github.com/user-attachments/assets/df341e30-d8be-4378-b4f5-9233ab4b23a2"/>
   <img height=60% width=60% src="https://github.com/user-attachments/assets/b4e3dd83-ea5d-456e-aede-18fe48256f0b"/>
