@@ -8,14 +8,14 @@ import sys
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
+iw = .3                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .3                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1                                      # Gbest coefficient 
 pop_n = 10                                  # Population number (3 , 5 , 10 , 15 , 20*)
 max_iter = 100                              # Maximum iteration
 
 # System parameters
-DEPTH = 3
+DEPTH = 4
 WIDTH = 5
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
@@ -23,7 +23,7 @@ Role_buffer = []
 Role_dictionary = {}
 randomness_seed = 11
 tracking_mode = True   
-velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
+velocity_factor = 0.5                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # Experiment parameters
 scenario_file_name = f"width_{WIDTH}_{d.now().strftime("%Y-%m-%d_%H:%M:%S")}" 
@@ -39,9 +39,10 @@ sbpfl = ("iteration" , "best particle fitness")
 pfl = ("iteration" , "particles fitness") 
 tpdl = ("iteration" , "total processing delay")
 
-sbpft = "Swarm’s Best Particle Fitness Plot"
-pft = "Particles Fitness Plot"
-tpdt = "Total Processing Delay Plot"
+# Plot titles, empty for now
+sbpft = ""
+pft = ""
+tpdt = ""
 
 gbest_particle_fitness_results = []
 particles_fitnesses_buffer = []
