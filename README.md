@@ -76,28 +76,30 @@ Since our problem is a minimization problem, the objective is to maximize the va
 **Note :** The TPD plots shown below do not include the initial total processing delay of the hierarchy before the swarm is created. We excluded it from the plots to focus on observing the progress of solution refinement.
 
 <p align="left">
-  <img height=36% width=40% src="https://github.com/user-attachments/assets/cfc8b069-2dca-4724-b9d2-6dd4a66d7572"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/29c1b8c4-7fda-47c1-a4e4-351ca397ae14"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/72e9d465-8b77-434f-9d33-b47da4cbc000"/>
 </p>
 
 **Parameters :**  
-- DEPTH : 4  
-- WIDTH : 4  
-- dimensions (particles position vector length) : 85  
-- randomness_seed : 11  
-- iw : 0.1  
-- c1 : 0.1  
-- c2 : 1  
-- pop_n : 10  
-- max_iter : 100  
-- velocity_factor : 0.1
+- DEPTH : 4
+- WIDTH : 4
+- dimensions : 85
+- randomness_seed : 11
+- iw : 0.3
+- c1 : 0.3
+- c2 : 1
+- pop_n : 10
+- max_iter : 100
+- velocity_factor : 0.5
 
 **Results :**
-- Initial Hierarchy's TPD Before PSO : **33.33**
-- Final Best Hierarchy's TPD After PSO : **26.69**
+- Initial Hierarchy TPD Before PSO : **33.33**
+- Final Best Hierarchy TPD After PSO : **22.91**
 
 <br>
 <p>
-  <img height=36% width=40% src="https://github.com/user-attachments/assets/fdf216d7-5a26-444d-955c-c8e9f7a96a25"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/ae9d14bd-6458-48fe-9a44-68036eb17f13"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/07e44ec3-bd93-4948-b12b-2d9c39ec57f6"/>
 </p>
 
 **Parameters :**
@@ -113,12 +115,13 @@ Since our problem is a minimization problem, the objective is to maximize the va
 - velocity_factor : 0.1
 
 **Results :**
-- Initial Hierarchy's TPD Before PSO : **23.5**
-- Final Best Hierarchy's TPD After PSO : **17.25**
+- Initial Hierarchy TPD Before PSO : **23.5**
+- Final Best Hierarchy TPD After PSO : **16.78**
 
 <br>
 <p>
-  <img height=36% width=40% src="https://github.com/user-attachments/assets/a1742b1d-1f9a-4f6b-869c-cee851a4d155"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/df341e30-d8be-4378-b4f5-9233ab4b23a2"/>
+  <img height=60% width=60% src="https://github.com/user-attachments/assets/b4e3dd83-ea5d-456e-aede-18fe48256f0b"/>
 </p>
 
 **Parameters :** 
@@ -126,16 +129,17 @@ Since our problem is a minimization problem, the objective is to maximize the va
 - WIDTH : 5
 - dimensions : 156
 - randomness_seed : 11
-- iw : 0.1
-- c1 : 0.1
+- iw : 0.3
+- c1 : 0.3
 - c2 : 1
 - pop_n : 10
 - max_iter : 100
-- velocity_factor : 0.1
+- velocity_factor : 0.5
+
 
 **Results :**
-- Initial Hierarchy's TPD Before PSO : **38.5**
-- Final Best Hierarchy's TPD After PSO : **32.25**
+- Initial Hierarchy TPD Before PSO : **38.5**
+- Final Best Hierarchy TPD After PSO : **31.78**
 
 ## Installation ⚙️
 1. Clone the project 
