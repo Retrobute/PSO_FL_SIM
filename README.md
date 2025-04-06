@@ -73,7 +73,8 @@ Since our problem is a minimization problem, the objective is to maximize the va
 4. Repeat case 3's steps until reaches the maximum iteration number.
 
 ## Screenshots 📸
-**Note :** The TPD plots shown below do not include the initial total processing delay of the hierarchy before the swarm is created. We excluded it from the plots to focus on observing the progress of solution refinement.
+**Note 1 :** The TPD plots shown below do not include the initial total processing delay of the hierarchy before the swarm is created. We excluded it from the plots to focus on observing the progress of solution refinement.
+**Note 2 :** Decreasing TPD is not the sole objective of this algorithm. It also offers several core features, including preserving client privacy (eliminating the need for clients to share their resource information), adaptability to various circumstances, optimization, and more.
 
 <p align="left">
   <img height=60% width=60% src="https://github.com/user-attachments/assets/29c1b8c4-7fda-47c1-a4e4-351ca397ae14"/>
@@ -135,7 +136,6 @@ Since our problem is a minimization problem, the objective is to maximize the va
 - pop_n : 10
 - max_iter : 100
 - velocity_factor : 0.5
-
 
 **Results :**
 - Initial Hierarchy TPD Before PSO : **38.5**
