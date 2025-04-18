@@ -2,10 +2,10 @@ from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import numpy as np
 
-def illustrate_plot(data, label, title, path):
+def show_plot(data, label, title, path):
     x = np.arange(1, len(data) + 1)
 
-    plt.figure(figsize=(14, 6))
+    plt.figure()
     plt.plot(x, data, color="blue", zorder=1)
     plt.scatter(x, data, color="blue", marker="o", zorder=2)
 
@@ -26,7 +26,7 @@ def plot_tuple_curves(data, label, title, path):
     
     data_array = np.array(data, dtype=float)
 
-    _, ax = plt.subplots(figsize=(14, 6))  
+    _, ax = plt.subplots()  
     for i in range(data_array.shape[1]):
         ax.plot(x, data_array[:, i], color='gray', alpha=0.5)
     
@@ -54,5 +54,20 @@ def plot_tuple_curves(data, label, title, path):
     ax.set_ylabel(label[1], fontsize=12)  
     ax.set_title(title, fontsize=16)  
     ax.legend(handles=legend_elements)
+    plt.savefig(path, dpi=300)
+    plt.show()
+
+
+def histogram_plot(data, path, label=("Bins", "Frequency")):
+    plt.figure()
+    _, _, _ = plt.hist(data, color="blue", alpha=0.7, edgecolor="black", zorder=1)
+
+    legend_element = Line2D([0], [0], color='blue', marker='s', linestyle='None', label="Data Frequency")
+
+    plt.grid(True, which='both', color='gray', linewidth=0.5)
+    plt.xlabel(label[0], fontsize=12)
+    plt.ylabel(label[1], fontsize=12)
+    plt.legend(handles=[legend_element])
+
     plt.savefig(path, dpi=300)
     plt.show()

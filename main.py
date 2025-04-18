@@ -1,18 +1,19 @@
 from measurements.tools.display_output import *
 from measurements.tools.store_output import *
-from random import randint , random , sample , seed 
+from scipy.stats import weibull_min, gamma
 from datetime import datetime as d
+import numpy as np
 import os
 import copy 
 import sys
 
 # Global parameters
 # PSO parameters                            
-iw = .3                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .3                                     # Pbest coefficient (0.01 , 0.1)
+iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
 c2 = 1                                      # Gbest coefficient 
-pop_n = 10                                  # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 100                              # Maximum iteration
+pop_n = 10                                   # Population number (3 , 5 , 10 , 15 , 20*)
+max_iter = 200                              # Maximum iteration
 
 # System parameters
 DEPTH = 4
@@ -22,8 +23,9 @@ Client_list = []
 Role_buffer = []
 Role_dictionary = {}
 randomness_seed = 11
+velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 tracking_mode = True   
-velocity_factor = 0.5                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
+distribution_type="lognormal_skew_left"
 
 # Experiment parameters
 scenario_file_name = f"width_{WIDTH}_{d.now().strftime("%Y-%m-%d_%H:%M:%S")}" 
@@ -31,9 +33,12 @@ scenario_folder_number = DEPTH
 scenario_folder_name = f"depth_{scenario_folder_number}_scenarios"
 
 # Graph illustration required parameters 
-particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_name}.png"
-swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_name}.png"
-tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_name}.png"
+file_type = "pdf"
+particles_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/particles_fitness_{scenario_file_name}.{file_type}"
+swarm_best_fitness_fig_path = f"./measurements/results/{scenario_folder_name}/swarm_best_fitness_{scenario_file_name}.{file_type}"
+tpd_fig_path = f"./measurements/results/{scenario_folder_name}/tpd_{scenario_file_name}.{file_type}"
+pspeed_fig_path = f"./measurements/results/{scenario_folder_name}/pspeed_{scenario_file_name}.{file_type}"
+memcap_fig_path = f"./measurements/results/{scenario_folder_name}/memcap_{scenario_file_name}.{file_type}"
 
 sbpfl = ("iteration" , "best particle fitness")
 pfl = ("iteration" , "particles fitness") 
@@ -51,6 +56,9 @@ particles_fitnesses_tuples = []
 tpd_buffer = []
 tpd_tuples = []
 iterations = []
+
+pspeed_list = []
+memcap_list = []
 
 # CSV output required parameters
 csv_particles_output_file_name = f"particles_data_{scenario_file_name}"
@@ -80,7 +88,8 @@ json_pso_dict = {
     "c2" : c2,
     "pop_n" : pop_n,
     "max_iter" : max_iter,
-    "velocity_factor" : velocity_factor
+    "velocity_factor" : velocity_factor,
+    "distribution_type" : distribution_type
 } 
 
 # Particle class
@@ -103,7 +112,8 @@ class Swarm :
         particles = []
 
         for _ in range(pop_n):
-            particle_pos = sample(cll, dimensions)
+            particle_pos = np.random.choice(cll, size=dimensions, replace=False)
+            print(type(particle_pos))
             root = rearrange_hierarchy(particle_pos)  
             fitness, _ = processing_fitness(root)
             velocity = [0] * dimensions 
@@ -177,28 +187,72 @@ def processing_fitness(master):
     
     return -total_process_delay , total_process_delay
 
+def distribute_random_resources(distribution_type, min_val, max_val) :     
+    distribution_type = distribution_type.lower()
+    
+    if distribution_type == 'uniform':
+        return np.random.uniform(low=min_val, high=max_val)
+
+    elif distribution_type == 'normal':
+        mu = (min_val + max_val) / 2
+        sigma = (max_val - min_val) / 4  # 95% within ±2σ
+        return np.random.normal(loc=mu, scale=sigma)
+    
+    elif distribution_type == 'lognormal_skew_right':
+        log_min = np.log(min_val)
+        log_max = np.log(max_val)
+        mu = (log_min + log_max) / 2
+        sigma = (log_max - log_min) / 4  # 95% within ±2σ in log-space
+        return np.random.lognormal(mean=mu, sigma=sigma)
+    
+    elif distribution_type == 'lognormal_skew_left':
+        log_min = np.log(min_val)
+        log_max = np.log(max_val)
+        mu = (log_min + log_max) / 2
+        sigma = (log_max - log_min) / 4  # 95% within ±2σ in log-space
+        return max_val - np.random.lognormal(mean=mu, sigma=sigma)
+    
+    elif distribution_type == 'weibull':
+        c = 2  # fixed shape parameter
+        # scale to align 95th percentile with max_val
+        scale = max_val / (-np.log(0.05)) ** (1/c)
+        return weibull_min.rvs(c=c, scale=scale)
+    
+    elif distribution_type == 'gamma':
+        a = 4  # Fixed shape parameter
+        mean = (min_val + max_val) / 2
+        scale = mean / a
+        return gamma.rvs(a=a, scale=scale)
+
+    else : 
+        return np.random.randint(min_val, max_val)
+
 def generate_hierarchy(depth, width):
     level_agtrainer_list = []
     agtrainer_list = []
     trainer_list = []
 
     def create_agtrainer(label_prefix, level):
-        pspeed = randint(2, 8)
-        memcap = randint(10, 50)
+        pspeed = distribute_random_resources(distribution_type, 2, 8)
+        memcap = distribute_random_resources(distribution_type, 10, 50)
         mdatasize = 5                         # in the beginning it's a fixed value but in the future as a stretch goal we can have variable MDataSize due to quantization and knowledge distillation techniques
         length = len(Client_list) 
         new_client = Client(memcap, mdatasize, length, f"t{label_prefix}ag{level}", pspeed, True)
         Client_list.append(new_client)
         agtrainer_list.append(new_client)
+        pspeed_list.append(pspeed)
+        memcap_list.append(memcap)
         level_agtrainer_list.append(new_client)
         return new_client
 
     def create_trainer(label_prefix):
-        pspeed = randint(2, 8)
-        memcap = randint(10, 50)
+        pspeed = distribute_random_resources(distribution_type, 2, 8)
+        memcap = distribute_random_resources(distribution_type, 10, 50)
         mdatasize = 5 
         length = len(Client_list)
         new_client = Client(memcap, mdatasize, length, label_prefix , pspeed)
+        pspeed_list.append(pspeed)
+        memcap_list.append(memcap)
         Client_list.append(new_client)
         trainer_list.append(new_client)
         return new_client
@@ -273,8 +327,8 @@ def rearrange_hierarchy(pso_particle) :            # This function has the itera
             return client
 
 def update_velocity(current_velocity, current_position, personal_best, global_best, iw, c1, c2):
-    r1 = [random() for _ in range(len(current_velocity))]
-    r2 = [random() for _ in range(len(current_velocity))]
+    r1 = [np.random.rand() for _ in range(len(current_velocity))]
+    r2 = [np.random.rand() for _ in range(len(current_velocity))]
 
     inertia = [iw * v for v in current_velocity]
     cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
@@ -304,12 +358,15 @@ def pso_fl_sim() :
     global iw
 
     if tracking_mode : 
-        seed(randomness_seed)
+        np.random.seed(randomness_seed)
 
     root = generate_hierarchy(DEPTH , WIDTH)
     initial_root = copy.deepcopy(root)
     _ , initial_tpd = processing_fitness(root)
     
+    # This line adds initial hierarchy TPD to the plot
+    # tpd_tuples.append([initial_tpd] * pop_n)
+
     counter = 1
 
     swarm = Swarm(pop_n , dimensions , root)
@@ -369,7 +426,11 @@ def pso_fl_sim() :
     save_data_to_csv(csv_cols[2] , csv_rows[2] , csv_tpd_data_path)
     save_metadata_to_json(json_pso_dict , json_path)
 
-    illustrate_plot(gbest_particle_fitness_results , sbpfl , sbpft , swarm_best_fitness_fig_path)
+    histogram_plot(pspeed_list, pspeed_fig_path)
+    histogram_plot(memcap_list, memcap_fig_path)
+
+    show_plot(gbest_particle_fitness_results , sbpfl , sbpft , swarm_best_fitness_fig_path)
+    
     plot_tuple_curves(particles_fitnesses_tuples , pfl , pft , particles_fitness_fig_path)
     plot_tuple_curves(tpd_tuples , tpdl , tpdt , tpd_fig_path)
     

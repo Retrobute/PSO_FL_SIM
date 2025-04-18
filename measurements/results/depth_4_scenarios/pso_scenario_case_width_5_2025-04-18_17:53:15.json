@@ -1,0 +1,13 @@
+{
+    "DEPTH": 4,
+    "WIDTH": 5,
+    "dimensions": 156,
+    "randomness_seed": 11,
+    "iw": 0.1,
+    "c1": 0.1,
+    "c2": 1,
+    "pop_n": 10,
+    "max_iter": 200,
+    "velocity_factor": 0.1,
+    "distribution_type": "lognormal_skew_left"
+}
