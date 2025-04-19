@@ -190,7 +190,7 @@ def processing_fitness(master):
             max_cluster_delay = max(cluster_delays)
             total_process_delay += max_cluster_delay  # Add max delay of the level to the total delay
     
-    return 1 / (total_process_delay+1) , total_process_delay
+    return -total_process_delay, total_process_delay
 
 def distribute_random_resources(distribution_type, min_val, max_val) :     
     distribution_type = distribution_type.lower()
