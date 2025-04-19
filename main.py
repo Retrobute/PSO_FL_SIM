@@ -4,28 +4,29 @@ from scipy.stats import weibull_min, gamma
 from datetime import datetime as d
 import numpy as np
 import os
+import math
 import copy 
 import sys
 
 # Global parameters
 # PSO parameters                            
-iw = .1                                     # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = .1                                     # Pbest coefficient (0.01 , 0.1)
-c2 = 1                                      # Gbest coefficient 
+iw = 0.9                                      # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
+c1 = 0.1                                      # Pbest coefficient (0.01 , 0.1)
+c2 = 0.9                                    # Gbest coefficient 
 pop_n = 10                                   # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 200                              # Maximum iteration
+max_iter = 300                              # Maximum iteration
+velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
 
 # System parameters
-DEPTH = 4
+DEPTH = 3
 WIDTH = 5
 dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
 randomness_seed = 11
-velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
-tracking_mode = True   
-distribution_type="lognormal_skew_left"
+tracking_mode = False   
+distribution_type="normal"
 
 # Experiment parameters
 scenario_file_name = f"width_{WIDTH}_{d.now().strftime("%Y-%m-%d_%H:%M:%S")}" 
@@ -48,6 +49,10 @@ tpdl = ("iteration" , "total processing delay")
 sbpft = ""
 pft = ""
 tpdt = ""
+
+y1 = [] # intertia weight
+y2 = [] # c2
+y3 = [] # c1
 
 gbest_particle_fitness_results = []
 particles_fitnesses_buffer = []
@@ -185,7 +190,7 @@ def processing_fitness(master):
             max_cluster_delay = max(cluster_delays)
             total_process_delay += max_cluster_delay  # Add max delay of the level to the total delay
     
-    return -total_process_delay , total_process_delay
+    return 1 / (total_process_delay+1) , total_process_delay
 
 def distribute_random_resources(distribution_type, min_val, max_val) :     
     distribution_type = distribution_type.lower()
@@ -354,8 +359,15 @@ def apply_velocity(p_position, p_velocity):
 
     return new_position
 
+
+def growth_rate(k, t0, counter):
+    # k = 0.3    # Growth steepness
+    # t0 = 0     # Counter value where growth_rate = 0.55
+    P = 1 / (1 + math.exp(-k * (counter - t0)))
+    return P
+
 def pso_fl_sim() :    
-    global iw
+    global iw, c1, c2, velocity_factor
 
     if tracking_mode : 
         np.random.seed(randomness_seed)
@@ -393,6 +405,15 @@ def pso_fl_sim() :
             
             tpd_buffer.append(tpd)
 
+        iw = 1.1 - growth_rate(0.1, max_iter // 2 , counter)
+        y1.append(iw)
+
+        c1 = 1.1 - growth_rate(0.05, max_iter // 2, counter)
+        y3.append(c1)
+
+        c2 = growth_rate(0.05, max_iter // 2, counter)
+        y2.append(c2)
+
         iterations.append(counter)
         
         gbest_particle_fitness_results.append(swarm.global_best_particle.fitness)
@@ -409,12 +430,16 @@ def pso_fl_sim() :
         csv_rows[2].append(tpd_row)
 
         os.system("cls") if sys.platform == "win32" else os.system("clear")
+        print("iw : ", iw)
+        print("c2 : ", c2)
+        print("c1 : ", c1)
         print(f"Iteration : {counter}") 
         
         tpd_buffer.clear()
         particles_fitnesses_buffer.clear()
         
         counter += 1
+
 
     print_hierarchy(initial_root)
     print("Dimensions : " , dimensions)
