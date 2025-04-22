@@ -1,6 +1,6 @@
 from measurements.tools.display_output import *
 from measurements.tools.store_output import *
-from scipy.stats import weibull_min, gamma
+from scipy.stats import weibull_min, gamma, beta
 from datetime import datetime as d
 import numpy as np
 import os
@@ -10,17 +10,17 @@ import sys
 
 # Global parameters
 # PSO parameters                            
-iw = 0.9                                      # Inertia Weight (Higher => Exploration | Lower => Exploitation)   (0.1 , 0.5)
-c1 = 0.1                                      # Pbest coefficient (0.01 , 0.1)
-c2 = 0.9                                    # Gbest coefficient 
-pop_n = 10                                   # Population number (3 , 5 , 10 , 15 , 20*)
-max_iter = 300                              # Maximum iteration
-velocity_factor = 0.1                       # Increasing velocity_factor causes more exploration resulting higher fluctuations in the particles plot (default range between 0 and 1 (Guess))
+iw = 0.9          # Initial Inertia Weight
+c1 = 2.0          # Initial Pbest coefficient
+c2 = 0.1          # Initial Gbest coefficient
+pop_n = 3
+max_iter = 100
+velocity_factor = 0.2  # Reduced for finer control
 
 # System parameters
 DEPTH = 3
 WIDTH = 5
-dimensions = 0 if DEPTH <= 0 or WIDTH <= 0 else sum(WIDTH**i for i in range(DEPTH))   
+dimensions = sum(WIDTH**i for i in range(DEPTH))
 Client_list = []
 Role_buffer = []
 Role_dictionary = {}
@@ -112,19 +112,19 @@ class Swarm :
         self.particles = self.__generate_random_particles(pop_n , dimensions , root)
         self.global_best_particle = copy.deepcopy(max(self.particles, key=lambda particle: particle.fitness))
 
-    def __generate_random_particles(self, pop_n, dimensions , root):
-        cll = range(len(Client_list))
+    def __generate_random_particles(self, pop_n, dimensions, root):
+        cll = len(Client_list)
         particles = []
-
         for _ in range(pop_n):
-            particle_pos = np.random.choice(cll, size=dimensions, replace=False)
-            print(type(particle_pos))
-            root = rearrange_hierarchy(particle_pos)  
+            # Position is now a continuous vector of length client_count
+            particle_pos = np.random.rand(cll)
+            # Get discrete assignment
+            assignment = np.argsort(particle_pos)[:dimensions]
+            root = rearrange_hierarchy(assignment)
             fitness, _ = processing_fitness(root)
-            velocity = [0] * dimensions 
-            best_pos_fitness = fitness                   
+            velocity = np.zeros(cll)  # Velocity matches position length
+            best_pos_fitness = fitness
             particles.append(Particle(particle_pos, fitness, velocity, best_pos_fitness))
-
         return particles
         
 class Client :
@@ -190,47 +190,49 @@ def processing_fitness(master):
             max_cluster_delay = max(cluster_delays)
             total_process_delay += max_cluster_delay  # Add max delay of the level to the total delay
     
-    return -total_process_delay, total_process_delay
+    return -total_process_delay , total_process_delay
 
-def distribute_random_resources(distribution_type, min_val, max_val) :     
+def distribute_random_resources(distribution_type, min_val, max_val):
     distribution_type = distribution_type.lower()
     
     if distribution_type == 'uniform':
-        return np.random.uniform(low=min_val, high=max_val)
+        value = np.random.uniform(low=min_val, high=max_val)
 
     elif distribution_type == 'normal':
         mu = (min_val + max_val) / 2
-        sigma = (max_val - min_val) / 4  # 95% within ±2σ
-        return np.random.normal(loc=mu, scale=sigma)
-    
+        sigma = (max_val - min_val) / 4
+        value = np.random.normal(loc=mu, scale=sigma)
+
     elif distribution_type == 'lognormal_skew_right':
         log_min = np.log(min_val)
         log_max = np.log(max_val)
         mu = (log_min + log_max) / 2
-        sigma = (log_max - log_min) / 4  # 95% within ±2σ in log-space
-        return np.random.lognormal(mean=mu, sigma=sigma)
-    
+        sigma = (log_max - log_min) / 4
+        value = np.random.lognormal(mean=mu, sigma=sigma)
+
     elif distribution_type == 'lognormal_skew_left':
-        log_min = np.log(min_val)
-        log_max = np.log(max_val)
-        mu = (log_min + log_max) / 2
-        sigma = (log_max - log_min) / 4  # 95% within ±2σ in log-space
-        return max_val - np.random.lognormal(mean=mu, sigma=sigma)
-    
+        # Use Beta distribution for left skew
+        alpha = 5  # Higher alpha pushes values toward max_val
+        beta_param = 2  # Lower beta creates a tail toward min_val
+        value = beta.rvs(alpha, beta_param)  # Generates value in [0,1]
+        value = min_val + (max_val - min_val) * value  # Scale to [min_val, max_val]
+
     elif distribution_type == 'weibull':
-        c = 2  # fixed shape parameter
-        # scale to align 95th percentile with max_val
+        c = 2
         scale = max_val / (-np.log(0.05)) ** (1/c)
-        return weibull_min.rvs(c=c, scale=scale)
-    
+        value = weibull_min.rvs(c=c, scale=scale)
+
     elif distribution_type == 'gamma':
-        a = 4  # Fixed shape parameter
+        a = 4
         mean = (min_val + max_val) / 2
         scale = mean / a
-        return gamma.rvs(a=a, scale=scale)
+        value = gamma.rvs(a=a, scale=scale)
 
-    else : 
-        return np.random.randint(min_val, max_val)
+    else:
+        value = np.random.randint(min_val, max_val)
+    
+    value = np.clip(value, min_val, max_val)
+    return value
 
 def generate_hierarchy(depth, width):
     level_agtrainer_list = []
@@ -332,31 +334,23 @@ def rearrange_hierarchy(pso_particle) :            # This function has the itera
             return client
 
 def update_velocity(current_velocity, current_position, personal_best, global_best, iw, c1, c2):
-    r1 = [np.random.rand() for _ in range(len(current_velocity))]
-    r2 = [np.random.rand() for _ in range(len(current_velocity))]
-
-    inertia = [iw * v for v in current_velocity]
-    cognitive = [c1 * r1[i] * (personal_best[i] - current_position[i]) for i in range(len(current_velocity))]
-    social = [c2 * r2[i] * (global_best[i] - current_position[i]) for i in range(len(current_velocity))]
+    r1 = np.random.rand(len(current_velocity))
+    r2 = np.random.rand(len(current_velocity))
     
-    max_velocity = max(1, int(len(current_velocity) * velocity_factor))
-    new_velocity = [round(inertia[i] + cognitive[i] + social[i]) for i in range(len(current_velocity))]
-    new_velocity = [max(min(v, max_velocity), -max_velocity) for v in new_velocity]  # Apply velocity limits
-
+    inertia = iw * current_velocity
+    cognitive = c1 * r1 * (personal_best - current_position)
+    social = c2 * r2 * (global_best - current_position)
+    
+    new_velocity = inertia + cognitive + social
+    max_velocity = max(1.0, len(current_velocity) * velocity_factor)  # Adjust as float
+    new_velocity = np.clip(new_velocity, -max_velocity, max_velocity)
+    
     return new_velocity
 
 def apply_velocity(p_position, p_velocity):
-    new_position = []
-    client_count = len(p_position)
-
-    for a, b in zip(p_position, p_velocity):
-        np = (a + b) % client_count  
-
-        while np in new_position:
-            np = (np + 1) % client_count  
-
-        new_position.append(np)
-
+    new_position = p_position + p_velocity
+    # Clip to [0,1] to keep values bounded
+    new_position = np.clip(new_position, 0, 1)
     return new_position
 
 
@@ -383,36 +377,33 @@ def pso_fl_sim() :
 
     swarm = Swarm(pop_n , dimensions , root)
 
-    while counter <= max_iter: 
-        for particle in swarm.particles :
+    while counter <= max_iter:
+        for particle in swarm.particles:
             particles_fitnesses_buffer.append(particle.fitness)
             
             new_velocity = update_velocity(particle.velocity, particle.pos, particle.best_pos, swarm.global_best_particle.best_pos, iw, c1, c2)
             new_position = apply_velocity(particle.pos, new_velocity)
-            root = rearrange_hierarchy(new_position)
-
+            assignment = np.argsort(new_position)[:dimensions]
+            
+            root = rearrange_hierarchy(assignment)
             new_pos_fitness, tpd = processing_fitness(root)
+            
             particle.pos = new_position
             particle.fitness = new_pos_fitness
             particle.velocity = new_velocity
             
-            if particle.fitness > particle.best_pos_fitness :  
+            if particle.fitness > particle.best_pos_fitness:
                 particle.best_pos = particle.pos.copy()
                 particle.best_pos_fitness = copy.copy(particle.fitness)
 
             if particle.fitness > swarm.global_best_particle.fitness:
-                swarm.global_best_particle = copy.deepcopy(particle)              
+                swarm.global_best_particle = copy.deepcopy(particle)           
             
             tpd_buffer.append(tpd)
 
-        iw = 1.1 - growth_rate(0.1, max_iter // 2 , counter)
-        y1.append(iw)
-
-        c1 = 1.1 - growth_rate(0.05, max_iter // 2, counter)
-        y3.append(c1)
-
-        c2 = growth_rate(0.05, max_iter // 2, counter)
-        y2.append(c2)
+        iw = 0.9 - 0.5 * (counter / max_iter)  # From 0.9 to 0.4
+        c1 = 2.0 - 1.5 * (counter / max_iter)  # From 2.0 to 0.5
+        c2 = 0.5 + 1.5 * (counter / max_iter)  # From 0.5 to 2.0
 
         iterations.append(counter)
         
@@ -433,13 +424,13 @@ def pso_fl_sim() :
         print("iw : ", iw)
         print("c2 : ", c2)
         print("c1 : ", c1)
+        print("dimensions : ", dimensions)
         print(f"Iteration : {counter}") 
         
         tpd_buffer.clear()
         particles_fitnesses_buffer.clear()
         
         counter += 1
-
 
     print_hierarchy(initial_root)
     print("Dimensions : " , dimensions)
@@ -462,3 +453,12 @@ def pso_fl_sim() :
 
 if __name__ == "__main__" : 
     pso_fl_sim()
+
+
+#iw = 1.1 - growth_rate(0.1, max_iter // 3, counter)
+# y1.append(iw)
+
+#c1 = 1.1 - growth_rate(0.05, max_iter // 3, counter)
+# y3.append(c1)
+
+#c2 = growth_rate(0.05, max_iter // 3, counter)
