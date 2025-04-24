@@ -14,7 +14,7 @@ iw = 0.9          # Initial Inertia Weight
 c1 = 2.0          # Initial Pbest coefficient
 c2 = 0.1          # Initial Gbest coefficient
 pop_n = 3
-max_iter = 100
+max_iter = 20000
 velocity_factor = 0.2  # Reduced for finer control
 
 # System parameters
@@ -401,9 +401,9 @@ def pso_fl_sim() :
             
             tpd_buffer.append(tpd)
 
-        iw = 0.9 - 0.5 * (counter / max_iter)  # From 0.9 to 0.4
-        c1 = 2.0 - 1.5 * (counter / max_iter)  # From 2.0 to 0.5
-        c2 = 0.5 + 1.5 * (counter / max_iter)  # From 0.5 to 2.0
+        iw = 0.9 - 0.3 * (counter / max_iter)  # From 0.9 to 0.4
+        c1 = 0.5 - 0.5 * (counter / max_iter)  # From 2.0 to 0.5
+        c2 = 0.3 + 0.7 * (counter / max_iter)  # From 0.5 to 2.0
 
         iterations.append(counter)
         
