@@ -1,6 +1,7 @@
 # PSO_FL_Sim
 <p align="center">
-  <img height="50%" width="50%" src="https://github.com/user-attachments/assets/c55ca5cd-2d12-480e-9576-ccd2846dad23"/>
+  <img width="340" height="340" alt="BlackBoxPSO" src="https://github.com/user-attachments/assets/f0a5032d-b4f9-49a1-8688-bb4f5bb9fa75" />
+
 </p>
 
 <p align="center">
